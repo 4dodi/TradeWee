@@ -1,0 +1,17 @@
+{
+  "name": "tradeweeb-app",
+  "version": "1.0.0",
+  "description": "Webapp d'analyse de charts de trading (IA vision) : signaux, TP/SL, actifs, calendrier économique, alertes FinancialJuice",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test/smoke.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  },
+  "private": true
+}

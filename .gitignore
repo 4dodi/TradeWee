@@ -1,0 +1,19 @@
+# Dépendances
+node_modules/
+
+# Données personnelles : clé API, analyses, journal de trades, captures.
+# NE JAMAIS les publier.
+data/
+*.zip
+
+# Secrets / environnement
+.env
+.env.*
+
+# Système / éditeurs
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+npm-debug.log*
