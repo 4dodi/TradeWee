@@ -7,7 +7,8 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const { languageMiddleware } = require('./i18n-server');
+const { languageMiddleware, toEnglish } = require('./i18n-server');
+const { setupSheets } = require('./sheets');
 const { setupTradingView } = require('./tradingview');
 
 const app = express();
@@ -58,6 +59,11 @@ const DEFAULT_CONFIG = {
     useNewsContext: true,
     webhookEnabled: false, // alertes TradingView → analyse automatique
     webhookSecret: '',
+    sheetsUrl: '',          // Google Sheets : URL de l'application Web Apps Script
+    sheetsToken: '',
+    sheetsName: '',
+    sheetsSheetUrl: '',
+    sheetsAuto: false,      // enregistrer automatiquement chaque nouvelle analyse
     providers: [] // IA supplémentaires pour la comparaison : [{id,name,baseUrl,apiKey,model}]
   },
   assets: [
@@ -500,6 +506,12 @@ function resolveKeyFor(body, savedUrl, savedKey) {
 app.use(express.json({ limit: '40mb' }));
 app.use(languageMiddleware); // langue des réponses : en-tête X-Lang (en par défaut)
 tradingView.mountApi();
+const sheets = setupSheets({
+  app, fetchWithTimeout, toEnglish, loadAnalyses,
+  saveAnalyses: (list) => saveJson(ANALYSES_FILE, list),
+  getSettings: () => config.settings,
+  saveSettings: (patch) => { Object.assign(config.settings, patch); saveConfig(); }
+});
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(UPLOADS_DIR));
 
@@ -507,7 +519,7 @@ app.use('/uploads', express.static(UPLOADS_DIR));
 // Config & réglages
 // ---------------------------------------------------------------------------
 app.get('/api/config', (req, res) => {
-  const { apiKey, providers, webhookSecret, ...rest } = config.settings;
+  const { apiKey, providers, webhookSecret, sheetsToken, ...rest } = config.settings;
   res.json({
     settings: {
       ...rest,
@@ -1046,6 +1058,7 @@ Rappel : réponds uniquement par le JSON au schéma demandé, en français.`;
   const analyses = loadAnalyses();
   analyses.unshift(entry);
   saveJson(ANALYSES_FILE, analyses.slice(0, 100));
+  sheets.autoSave(entry, lang); // Google Sheets (si activé), en arrière-plan
 
   return { status: 200, body: {
     ...entry,

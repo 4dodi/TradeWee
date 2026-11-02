@@ -87,6 +87,18 @@ const PATTERNS = [
   [/^Rien à traduire : cette analyse n’a pas de plan\.$/, 'Nothing to translate: this analysis has no plan.'],
   [/^Traduction impossible : (.*)$/s, 'Translation failed: ~1'],
   [/^Réponse de traduction illisible\. Réessayez\.$/, 'Unreadable translation response. Try again.'],
+  // Google Sheets
+  [/^Google Sheets n’est pas connecté \(Réglages\)\.$/, 'Google Sheets is not connected (Settings).'],
+  [/^Rien à enregistrer : cette analyse n’a pas de plan\.$/, 'Nothing to save: this analysis has no plan.'],
+  [/^Redirection Google inattendue\.$/, 'Unexpected redirect from Google.'],
+  [/^Google refuse l’accès : redéployez le script avec « Qui a accès : Tout le monde »\.$/, 'Google denied access: redeploy the script with “Who has access: Anyone”.'],
+  [/^Réponse inattendue de Google \(HTTP (\d+)\) : vérifiez l’URL de l’application Web\.$/, 'Unexpected response from Google (HTTP $1): check the Web app URL.'],
+  [/^Jeton refusé : recopiez le script depuis Tradewee dans votre feuille, puis redéployez-le\.$/, 'Token rejected: copy the script from Tradewee into your sheet again, then redeploy it.'],
+  [/^Erreur du script Google : (.*)$/s, 'Google script error: ~1'],
+  [/^Script introuvable : (.*)$/s, 'Script not found: $1'],
+  [/^URL invalide : collez l’« URL de l’application Web » \(https:\/\/script\.google\.com\/macros\/s\/…\/exec\)\.$/, 'Invalid URL: paste the “Web app URL” (https://script.google.com/macros/s/…/exec).'],
+  [/^Connexion à Google Sheets impossible : (.*)$/s, 'Could not connect to Google Sheets: ~1'],
+  [/^Enregistrement dans Google Sheets impossible : (.*)$/s, 'Could not save to Google Sheets: ~1'],
   // échec d'une analyse lancée par une alerte TradingView (enregistré dans l'historique)
   [/^TradingView → (.*)$/s, 'TradingView → ~1']
 ];

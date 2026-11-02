@@ -56,6 +56,14 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
   const trRes = await fetch(base + '/api/analyses/inconnu/translate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{"lang":"en"}' });
   assert.strictEqual(trRes.status, 404);
 
+  // Google Sheets : seules les URL Apps Script sont acceptées, jeton absent de /api/config
+  const gs = await fetch(base + '/api/sheets/connect', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: 'https://evil.example/exec' }) });
+  assert.strictEqual(gs.status, 400);
+  const gsScript = await (await fetch(base + '/api/sheets/script')).text();
+  const gsToken = (gsScript.match(/const TOKEN = '([^']+)'/) || [])[1];
+  assert(gsToken && gsToken.length >= 24, 'script Apps Script avec jeton');
+  assert(!JSON.stringify(await (await fetch(base + '/api/config')).json()).includes(gsToken), 'jeton Sheets absent de /api/config');
+
   // Alertes TradingView : désactivées par défaut, puis protégées par un secret
   const hook = (body, headers = {}) => fetch(base + '/api/webhook/tradingview', { method: 'POST', headers, body });
   assert.strictEqual((await hook('{}')).status, 404, 'webhook désactivé par défaut');

@@ -68,25 +68,29 @@ window.AnalyzeMgr = {
   /* ---------- Rendu du résultat ---------- */
   showResult(entry) {
     APP.currentAnalysis = entry;
-    if (APP.lastShownId !== entry.id) { APP.showOriginal = false; APP.lastShownId = entry.id; }
+    if (APP.lastShownId !== entry.id) { APP.viewLang = null; APP.lastShownId = entry.id; }
     $('#result-empty').hidden = true;
     const body = $('#result-body');
     body.hidden = false;
 
     // Langue du texte de l'IA : les anciennes analyses (sans « lang ») sont en français ; la démo suit l'interface
     const srcLang = !entry.id ? LANG : (entry.lang === 'en' || entry.lang === 'fr') ? entry.lang : 'fr';
-    const translation = srcLang !== LANG && entry.translations && entry.translations[LANG];
-    const r = (translation && !APP.showOriginal) ? translation : entry.result;
-    APP.currentView = { ...entry, result: r }; // version affichée : utilisée par « Copier le plan » et TradingView
+    // Langue affichée : choisie avec le sélecteur EN | FR de l'analyse ; sinon celle de l'interface si disponible
+    const hasLang = l => l === srcLang || !!(entry.translations && entry.translations[l]);
+    const viewLang = (APP.viewLang && hasLang(APP.viewLang)) ? APP.viewLang : (hasLang(LANG) ? LANG : srcLang);
+    const r = viewLang === srcLang ? entry.result : entry.translations[viewLang];
+    APP.currentView = { ...entry, result: r, viewLang }; // version affichée : utilisée par « Copier le plan », TradingView et Sheets
     let langBar = '';
-    if (entry.result && srcLang !== LANG) {
-      const srcName = srcLang === 'fr' ? t('français') : t('anglais');
-      langBar = translation
-        ? `<div class="lang-bar">${esc(APP.showOriginal ? t('Original en {lang}', { lang: srcName }) : t('🌐 Traduction automatique — original en {lang}', { lang: srcName }))}
-             <button class="btn btn-ghost btn-sm" id="btn-orig">${esc(APP.showOriginal ? t('Voir la traduction') : t('Voir l’original'))}</button></div>`
-        : `<div class="lang-bar">${esc(t('Cette analyse a été rédigée en {lang}.', { lang: srcName }))}
-             <button class="btn btn-primary btn-sm" id="btn-translate">${esc(t('🌐 Traduire en français'))}</button>
-             <span class="muted">${esc(t('Utilise votre IA une seule fois : la traduction est enregistrée.'))}</span></div>`;
+    if (entry.result && entry.id) {
+      const langName = l => l === 'fr' ? t('français') : t('anglais');
+      const other = viewLang === 'en' ? 'fr' : 'en';
+      const segBtn = l => `<button class="seg-btn ${viewLang === l ? 'active' : ''}" data-view-lang="${l}">${l === 'en' ? 'English' : 'Français'}</button>`;
+      const note = viewLang !== srcLang
+        ? t('traduction automatique — original en {lang}', { lang: langName(srcLang) })
+        : hasLang(other) ? '' : t('Cliquez sur {lang} pour traduire (une seule fois, avec votre IA).', { lang: other === 'en' ? 'English' : 'Français' });
+      langBar = `<div class="lang-bar"><span>🌐 ${esc(t('Langue de l’analyse :'))}</span>
+        <div class="seg-lang">${segBtn('en')}${segBtn('fr')}</div>
+        ${note ? `<span class="muted">${esc(note)}</span>` : ''}</div>`;
     }
 
     if (!r) {
@@ -227,7 +231,7 @@ window.AnalyzeMgr = {
       ${r.gestion ? `<div class="md-sec"><h3>🎛️ ${esc(t('Gestion de position'))}</h3><div class="md">${mdToHtml(r.gestion)}</div></div>` : ''}
       ${warns}
       ${comparisonHtml}
-      <div class="btn-row" style="margin-top:14px">${entry.id ? `<button class="btn" id="btn-journal">📓 ${esc(t('Journaliser ce plan'))}</button><button class="btn" id="btn-notrade">🚫 ${esc(t('Non tradé'))}</button>` : ''}<button class="btn" id="btn-copyplan">📋 ${esc(t('Copier le plan'))}</button><button class="btn" id="btn-pine" title="${esc(t('Script Pine qui trace l’entrée, le SL et les TP sur votre graphique TradingView'))}">📈 ${esc(t('Vers TradingView'))}</button></div>
+      <div class="btn-row" style="margin-top:14px">${entry.id ? `<button class="btn" id="btn-journal">📓 ${esc(t('Journaliser ce plan'))}</button><button class="btn" id="btn-notrade">🚫 ${esc(t('Non tradé'))}</button>` : ''}<button class="btn" id="btn-copyplan">📋 ${esc(t('Copier le plan'))}</button>${entry.id ? `<button class="btn" id="btn-sheets" title="${esc(t('Ajouter cette analyse à votre feuille Google Sheets'))}">📊 ${esc(entry.sheetsSavedAt ? t('Enregistré dans Sheets ✓') : t('Enregistrer dans Sheets'))}</button>` : ''}<button class="btn" id="btn-pine" title="${esc(t('Script Pine qui trace l’entrée, le SL et les TP sur votre graphique TradingView'))}">📈 ${esc(t('Vers TradingView'))}</button></div>
     `;
   },
 
@@ -452,25 +456,33 @@ $('#result-body').addEventListener('click', async e => {
   if (e.target.closest('#btn-copyplan')) {
     await copyPlanMarkdown(APP.currentView || APP.currentAnalysis);
   }
-  if (e.target.closest('#btn-orig')) {
-    APP.showOriginal = !APP.showOriginal;
-    AnalyzeMgr.showResult(APP.currentAnalysis);
-  }
-  const trBtn = e.target.closest('#btn-translate');
-  if (trBtn) {
-    const id = APP.currentAnalysis && APP.currentAnalysis.id;
-    if (!id) return;
-    trBtn.disabled = true;
-    trBtn.textContent = t('⏳ Traduction…');
+  const langBtn = e.target.closest('[data-view-lang]');
+  if (langBtn && !langBtn.classList.contains('active')) {
+    const entry = APP.currentAnalysis, target = langBtn.dataset.viewLang;
+    if (!entry || !entry.id) return;
+    const srcLang = (entry.lang === 'en' || entry.lang === 'fr') ? entry.lang : 'fr';
+    if (target === srcLang || (entry.translations && entry.translations[target])) {
+      APP.viewLang = target;
+      AnalyzeMgr.showResult(entry);
+      return;
+    }
+    // pas encore traduite : une seule traduction par l'IA, ensuite enregistrée
+    $$('[data-view-lang]').forEach(b => { b.disabled = true; });
+    langBtn.textContent = t('⏳ Traduction…');
     try {
-      const updated = await api(`/api/analyses/${encodeURIComponent(id)}/translate`, { method: 'POST', body: JSON.stringify({ lang: LANG }) });
-      if (APP.currentAnalysis && APP.currentAnalysis.id === id) AnalyzeMgr.showResult(updated);
+      const updated = await api(`/api/analyses/${encodeURIComponent(entry.id)}/translate`, { method: 'POST', body: JSON.stringify({ lang: target }) });
+      if (APP.currentAnalysis && APP.currentAnalysis.id === entry.id) {
+        APP.viewLang = target;
+        AnalyzeMgr.showResult(updated);
+      }
       toast(t('Analyse traduite ✓'), 'ok');
     } catch (err) {
       toast(err.message, 'err');
-      trBtn.disabled = false;
-      trBtn.textContent = t('🌐 Traduire en français');
+      AnalyzeMgr.showResult(entry);
     }
+  }
+  if (e.target.closest('#btn-sheets')) {
+    await SheetsMgr.saveCurrent();
   }
 });
 

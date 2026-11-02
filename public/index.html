@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tradewee — Analyse de charts</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📈</text></svg>">
-  <link rel="stylesheet" href="css/style.css?v=15">
+  <link rel="stylesheet" href="css/style.css?v=16">
 </head>
 <body>
   <div class="layout">
@@ -385,6 +385,34 @@
           </div>
         </div>
 
+        <div class="card" id="gs-card">
+          <h2 class="card-title">📊 Google Sheets — rapports d’analyse</h2>
+          <p class="field-hint">Enregistrez vos analyses dans votre propre feuille Google Sheets : une ligne par analyse (biais, niveaux, textes). Aucun projet Google Cloud n’est nécessaire.</p>
+          <div id="gs-connected" hidden>
+            <p class="gs-status">✅ Connecté à <b id="gs-name"></b> · <a id="gs-open" href="#" target="_blank" rel="noopener noreferrer">Ouvrir la feuille ↗</a></p>
+            <label class="check"><input type="checkbox" id="gs-auto"> Enregistrer automatiquement chaque nouvelle analyse</label>
+            <div class="btn-row">
+              <button type="button" class="btn btn-ghost" id="gs-save-all">📤 Enregistrer tout l’historique</button>
+              <button type="button" class="btn btn-ghost" id="gs-disconnect">Déconnecter</button>
+            </div>
+          </div>
+          <div id="gs-setup">
+            <ol class="tv-steps">
+              <li><a href="https://sheets.new" target="_blank" rel="noopener noreferrer">Créez une nouvelle feuille Google Sheets ↗</a></li>
+              <li>Dans la feuille : Extensions → Apps Script. Effacez le code d’exemple, collez le script, puis enregistrez. <button type="button" class="btn btn-ghost btn-sm" id="gs-copy-script">📋 Copier le script</button></li>
+              <li>Déployer → Nouveau déploiement → ⚙️ Application Web. Exécuter en tant que : Moi. Qui a accès : Tout le monde. Cliquez sur Déployer, autorisez l’accès, puis copiez l’« URL de l’application Web ».</li>
+              <li>Collez l’URL ci-dessous et cliquez sur Connecter.</li>
+            </ol>
+            <div class="field">
+              <div class="input-row">
+                <input id="gs-url" placeholder="https://script.google.com/macros/s/…/exec" spellcheck="false">
+                <button type="button" class="btn btn-primary" id="gs-connect">🔗 Connecter</button>
+              </div>
+            </div>
+            <p class="field-hint">Lors de l’autorisation, Google affiche « Google n’a pas validé cette application » : c’est normal pour un script personnel. Cliquez sur Paramètres avancés → Accéder au projet. « Tout le monde » permet à Tradewee d’écrire dans la feuille sans connexion Google ; seul le jeton secret inclus dans le script l’autorise.</p>
+          </div>
+        </div>
+
         <div class="card" id="tvl-card">
           <h2 class="card-title">📈 Plans sur votre graphique TradingView</h2>
           <p class="field-hint">TradingView ne permet pas aux applications externes de dessiner sur votre graphique. Installez une seule fois l’indicateur « Tradewee Levels » : il suffit ensuite de coller vos plans dans ses paramètres, et il affiche celui qui correspond au symbole du graphique.</p>
@@ -444,15 +472,16 @@
   <div id="modal-overlay" hidden>
     <div class="modal" id="modal-box"></div>
   </div>
-  <script src="js/i18n.js?v=4"></script>
+  <script src="js/i18n.js?v=5"></script>
   <script src="js/util.js?v=16"></script>
   <script src="js/app.js?v=16"></script>
   <script src="js/assets.js?v=16"></script>
-  <script src="js/analyze.js?v=18"></script>
+  <script src="js/analyze.js?v=19"></script>
   <script src="js/calendar.js?v=15"></script>
   <script src="js/alerts.js?v=16"></script>
   <script src="js/journal.js?v=16"></script>
   <script src="js/market.js?v=18"></script>
   <script src="js/tradingview.js?v=2"></script>
+  <script src="js/sheets.js?v=1"></script>
 </body>
 </html>

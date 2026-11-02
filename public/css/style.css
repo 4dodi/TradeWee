@@ -1,4 +1,6 @@
 /* ================= Tradewee — thème sombre trading ================= */
+/* l’attribut « hidden » doit toujours l’emporter (sinon un display:flex affiche un bloc vide) */
+[hidden] { display: none !important; }
 :root {
   --bg: #0b0e14;
   --panel: #11151f;
@@ -505,3 +507,14 @@ code { background: var(--bg); padding: 1px 5px; border-radius: 5px; font-size: 1
 .tv-alt summary { cursor: pointer; color: var(--muted); font-size: 13px; margin-bottom: 8px; }
 .tv-steps li { margin-bottom: 6px; }
 .lang-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 8px 12px; margin-bottom: 12px; border: 1px dashed var(--border); border-radius: 9px; font-size: 13px; color: var(--muted); }
+/* ---- Sélecteur de langue d'une analyse ---- */
+.seg-lang { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.seg-btn { background: transparent; color: var(--muted); border: 0; padding: 4px 12px; font-size: 12.5px; cursor: pointer; font-family: inherit; }
+.seg-btn + .seg-btn { border-left: 1px solid var(--border); }
+.seg-btn.active { background: var(--accent); color: #fff; cursor: default; }
+.seg-btn:not(.active):hover { color: var(--text); background: var(--card-2); }
+.seg-btn:disabled { opacity: .6; cursor: wait; }
+/* ---- Google Sheets ---- */
+#gs-card { margin-top: 16px; }
+.gs-status { font-size: 13.5px; margin: 6px 0 10px; }
+.gs-status a { color: var(--accent); }

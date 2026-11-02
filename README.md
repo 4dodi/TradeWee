@@ -39,7 +39,7 @@ The app opens at <http://localhost:3000>.
 
 The interface is available in **English** (default) and **French**. Pick the language with the 🌐 selector at the bottom of the sidebar (or open `http://localhost:3000/?lang=fr`). The choice is remembered in your browser.
 
-The AI writes new analyses in the selected language. When you open an analysis written in the other language (for example one created before English was added), a **🌐 Translate** button converts its text — prices, levels and bias are never changed. The translation is saved with the analysis, so switching languages later is instant and doesn't use your AI again; **Show original** brings back the original text.
+The AI writes new analyses in the selected language. Every saved analysis also has its own **English | Français** switch: the first click on the other language translates it with your AI (prices, levels and bias are never changed), and the translation is saved, so switching back and forth afterwards is instant and free. Older analyses written before English was added open in French and can be switched the same way.
 
 ## AI setup (required to analyze)
 
@@ -95,6 +95,17 @@ A TradingView alert can send a webhook to Tradewee, which then runs an analysis 
 
 The secret stops anyone else from triggering analyses — keep it private and use **New secret** if it leaks. Identical alerts within 60 s are ignored and at most 3 are processed at a time, to protect your AI quota.
 
+## Google Sheets
+
+Save your analysis reports to your own Google Sheets spreadsheet — one row per analysis with date, asset, timeframe, bias, confidence, entry and zone, SL, TP1–TP3, R:R, position size, model, patterns, the written analyses and warnings. No Google Cloud project or OAuth app is needed: a small Apps Script ([`public/sheets/tradewee-sheets.gs`](public/sheets/tradewee-sheets.gs)) runs inside your sheet.
+
+1. In **⚙️ Settings → Google Sheets**, open the link to create a new spreadsheet.
+2. In the sheet: **Extensions → Apps Script**. Delete the sample code, paste the script copied from Tradewee (it already contains your secret token), and save.
+3. **Deploy → New deployment → Web app**, *Execute as: Me*, *Who has access: Anyone*, then **Deploy**. Google warns that the app isn't verified — normal for a personal script: **Advanced → Go to the project**. Copy the **Web app URL**.
+4. Paste the URL in Tradewee and click **Connect**.
+
+Then use **📊 Save to Sheets** on any analysis (it saves the language currently displayed), **Save whole history**, or tick **Automatically save every new analysis** (including analyses started by TradingView alerts). Saving the same analysis again updates its row instead of duplicating it. “Anyone” is required so Tradewee can post without a Google sign-in; the script only accepts requests carrying your secret token, and Tradewee only ever sends data to `script.google.com`.
+
 ## Environment variables
 
 | Variable | Default | Purpose |
@@ -136,6 +147,7 @@ To use it online, deploy the GitHub repository to a Node.js host (Render, Railwa
 TradeWee/
 ├── server.js          # Express server (API, calendar/alerts proxy, AI calls)
 ├── i18n-server.js     # English translation of server messages
+├── sheets.js          # Google Sheets (Apps Script)
 ├── tradingview.js     # TradingView webhook → automatic analysis
 ├── public/            # interface (HTML/CSS/JS, no build step)
 │   └── js/            # i18n (EN/FR) / analyze / assets / calendar / alerts / journal / market / tradingview
