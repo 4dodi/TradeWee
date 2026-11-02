@@ -37,7 +37,9 @@ The app opens at <http://localhost:3000>.
 
 ## Language (EN / FR)
 
-The interface is available in **English** (default) and **French**. Pick the language with the 🌐 selector at the bottom of the sidebar (or open `http://localhost:3000/?lang=fr`). The choice is remembered in your browser. The AI writes its analyses in the selected language; analyses already saved stay in their original language.
+The interface is available in **English** (default) and **French**. Pick the language with the 🌐 selector at the bottom of the sidebar (or open `http://localhost:3000/?lang=fr`). The choice is remembered in your browser.
+
+The AI writes new analyses in the selected language. When you open an analysis written in the other language (for example one created before English was added), a **🌐 Translate** button converts its text — prices, levels and bias are never changed. The translation is saved with the analysis, so switching languages later is instant and doesn't use your AI again; **Show original** brings back the original text.
 
 ## AI setup (required to analyze)
 

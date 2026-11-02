@@ -493,6 +493,19 @@ const EN = {
   '📋 Copier l’indicateur': '📋 Copy the indicator',
   '📋 Copier tous mes derniers plans': '📋 Copy all my latest plans',
 
+  // ---- Traduction des analyses
+  'français': 'French',
+  'anglais': 'English',
+  'Original en {lang}': 'Original in {lang}',
+  '🌐 Traduction automatique — original en {lang}': '🌐 Machine translation — original in {lang}',
+  'Voir la traduction': 'Show translation',
+  'Voir l’original': 'Show original',
+  'Cette analyse a été rédigée en {lang}.': 'This analysis was written in {lang}.',
+  '🌐 Traduire en français': '🌐 Translate to English',
+  'Utilise votre IA une seule fois : la traduction est enregistrée.': 'Uses your AI once: the translation is saved.',
+  '⏳ Traduction…': '⏳ Translating…',
+  'Analyse traduite ✓': 'Analysis translated ✓',
+
   // ---- Divers
   'Erreur {n}': 'Error {n}',
   'à l’instant': 'just now',

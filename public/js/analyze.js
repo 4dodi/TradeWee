@@ -68,10 +68,27 @@ window.AnalyzeMgr = {
   /* ---------- Rendu du résultat ---------- */
   showResult(entry) {
     APP.currentAnalysis = entry;
+    if (APP.lastShownId !== entry.id) { APP.showOriginal = false; APP.lastShownId = entry.id; }
     $('#result-empty').hidden = true;
     const body = $('#result-body');
     body.hidden = false;
-    const r = entry.result;
+
+    // Langue du texte de l'IA : les anciennes analyses (sans « lang ») sont en français ; la démo suit l'interface
+    const srcLang = !entry.id ? LANG : (entry.lang === 'en' || entry.lang === 'fr') ? entry.lang : 'fr';
+    const translation = srcLang !== LANG && entry.translations && entry.translations[LANG];
+    const r = (translation && !APP.showOriginal) ? translation : entry.result;
+    APP.currentView = { ...entry, result: r }; // version affichée : utilisée par « Copier le plan » et TradingView
+    let langBar = '';
+    if (entry.result && srcLang !== LANG) {
+      const srcName = srcLang === 'fr' ? t('français') : t('anglais');
+      langBar = translation
+        ? `<div class="lang-bar">${esc(APP.showOriginal ? t('Original en {lang}', { lang: srcName }) : t('🌐 Traduction automatique — original en {lang}', { lang: srcName }))}
+             <button class="btn btn-ghost btn-sm" id="btn-orig">${esc(APP.showOriginal ? t('Voir la traduction') : t('Voir l’original'))}</button></div>`
+        : `<div class="lang-bar">${esc(t('Cette analyse a été rédigée en {lang}.', { lang: srcName }))}
+             <button class="btn btn-primary btn-sm" id="btn-translate">${esc(t('🌐 Traduire en français'))}</button>
+             <span class="muted">${esc(t('Utilise votre IA une seule fois : la traduction est enregistrée.'))}</span></div>`;
+    }
+
     if (!r) {
       body.innerHTML = `
         <div class="warn-box">${esc(t('⚠️ L’IA n’a pas renvoyé de JSON exploitable. Réponse brute :'))}</div>
@@ -175,6 +192,7 @@ window.AnalyzeMgr = {
     const imgsTxt = (entry.images || []).length ? `<span class="muted" style="margin-left:auto">${esc(t('{n} capture(s)', { n: entry.images.length }))} · ${esc(entry.model || '')} · ${dateTxt}</span>` : '';
 
     body.innerHTML = `
+      ${langBar}
       ${entry.truncated ? `<div class="warn-box">✂️ ${esc(t('Réponse de l’IA tronquée par la limite de longueur : les niveaux sont fiables, le texte d’analyse peut être incomplet. Relancez pour obtenir l’analyse complète.'))}</div>` : ''}
       ${(entry.macroEvents || []).some(ev => ev.minutesUntil <= 180) ? (entry.macroEvents || []).filter(ev => ev.minutesUntil <= 180).map(ev =>
         `<div class="mb-item red" style="margin-bottom:8px">⛔ ${esc(t('FENÊTRE À ÉVITER'))} — ${esc(ev.title)} (${esc(ev.country)}) ${esc(ev.minutesUntil >= 60 ? t('dans {h} h {m}', { h: Math.floor(ev.minutesUntil / 60), m: String(ev.minutesUntil % 60).padStart(2, '0') }) : t('dans {m} min', { m: ev.minutesUntil }))}</div>`
@@ -429,10 +447,30 @@ $('#result-body').addEventListener('click', async e => {
     } catch (err) { toast(err.message, 'err'); }
   }
   if (e.target.closest('#btn-pine')) {
-    TradingViewMgr.showPine(APP.currentAnalysis);
+    TradingViewMgr.showPine(APP.currentView || APP.currentAnalysis);
   }
   if (e.target.closest('#btn-copyplan')) {
-    await copyPlanMarkdown(APP.currentAnalysis);
+    await copyPlanMarkdown(APP.currentView || APP.currentAnalysis);
+  }
+  if (e.target.closest('#btn-orig')) {
+    APP.showOriginal = !APP.showOriginal;
+    AnalyzeMgr.showResult(APP.currentAnalysis);
+  }
+  const trBtn = e.target.closest('#btn-translate');
+  if (trBtn) {
+    const id = APP.currentAnalysis && APP.currentAnalysis.id;
+    if (!id) return;
+    trBtn.disabled = true;
+    trBtn.textContent = t('⏳ Traduction…');
+    try {
+      const updated = await api(`/api/analyses/${encodeURIComponent(id)}/translate`, { method: 'POST', body: JSON.stringify({ lang: LANG }) });
+      if (APP.currentAnalysis && APP.currentAnalysis.id === id) AnalyzeMgr.showResult(updated);
+      toast(t('Analyse traduite ✓'), 'ok');
+    } catch (err) {
+      toast(err.message, 'err');
+      trBtn.disabled = false;
+      trBtn.textContent = t('🌐 Traduire en français');
+    }
   }
 });
 

@@ -1030,6 +1030,7 @@ Rappel : réponds uniquement par le JSON au schéma demandé, en français.`;
     id: crypto.randomUUID(),
     date: new Date().toISOString(),
     model: modelUsed,
+    lang: lang === 'fr' ? 'fr' : 'en', // langue du texte rédigé par l'IA
     params: { asset: asset || null, timeframe: timeframe || null, notes: notes || '', direction: direction || 'aucun', source },
     images: savedFiles,
     result: parsed,
@@ -1081,6 +1082,90 @@ app.get('/api/analyses/:id', (req, res) => {
   const e = loadAnalyses().find(a => a.id === req.params.id);
   if (!e) return res.status(404).json({ error: 'Analyse introuvable.' });
   res.json(e);
+});
+
+// ---------------------------------------------------------------------------
+// Traduction d'une analyse (FR ⇄ EN) — seuls les textes sont traduits, jamais
+// les prix : la réponse de l'IA est fusionnée champ par champ dans l'original.
+// Les analyses enregistrées avant l'ajout de l'anglais n'ont pas de « lang » : français.
+// ---------------------------------------------------------------------------
+const analysisLang = (e) => (e && (e.lang === 'en' || e.lang === 'fr')) ? e.lang : 'fr';
+
+function textSkeleton(r) {
+  const pick = (o, keys) => Object.fromEntries(keys.filter(k => o && o[k] != null).map(k => [k, o[k]]));
+  return {
+    ...pick(r, ['uniteDeTemps', 'analyseTechnique', 'analyseFondamentale', 'invalidation', 'gestion', 'figuresDetectees', 'evenementsProches', 'avertissements']),
+    takeProfits: (r.takeProfits || []).map(tp => ({ commentaire: (tp && tp.commentaire) || '' })),
+    indicateurs: (r.indicateurs || []).map(i => pick(i, ['nom', 'lecture', 'implication']))
+  };
+}
+
+function mergeTranslation(orig, tr) {
+  const out = JSON.parse(JSON.stringify(orig));
+  const txt = (v, fallback) => (typeof v === 'string' && v.trim()) ? v : fallback;
+  for (const k of ['uniteDeTemps', 'analyseTechnique', 'analyseFondamentale', 'invalidation', 'gestion']) {
+    if (typeof orig[k] === 'string') out[k] = txt(tr[k], orig[k]);
+  }
+  for (const k of ['figuresDetectees', 'evenementsProches', 'avertissements']) {
+    if (Array.isArray(orig[k])) out[k] = orig[k].map((v, i) => typeof v === 'string' ? txt(tr[k] && tr[k][i], v) : v);
+  }
+  if (Array.isArray(orig.takeProfits)) {
+    out.takeProfits = orig.takeProfits.map((tp, i) => tp && typeof tp === 'object'
+      ? { ...tp, commentaire: txt(tr.takeProfits && tr.takeProfits[i] && tr.takeProfits[i].commentaire, tp.commentaire) } : tp);
+  }
+  if (Array.isArray(orig.indicateurs)) {
+    out.indicateurs = orig.indicateurs.map((x, i) => {
+      const t = (tr.indicateurs && tr.indicateurs[i]) || {};
+      return x && typeof x === 'object'
+        ? { ...x, nom: txt(t.nom, x.nom), lecture: txt(t.lecture, x.lecture), implication: txt(t.implication, x.implication) } : x;
+    });
+  }
+  return out;
+}
+
+const translating = new Map(); // évite deux traductions simultanées de la même analyse
+
+app.post('/api/analyses/:id/translate', async (req, res) => {
+  const target = (req.body && req.body.lang) === 'fr' ? 'fr' : 'en';
+  const e = loadAnalyses().find(a => a.id === req.params.id);
+  if (!e) return res.status(404).json({ error: 'Analyse introuvable.' });
+  if (!e.result) return res.status(400).json({ error: 'Rien à traduire : cette analyse n’a pas de plan.' });
+  if (analysisLang(e) === target || (e.translations && e.translations[target])) return res.json(e);
+
+  const { baseUrl, apiKey } = config.settings;
+  if (!apiKey) return res.status(400).json({ error: 'Aucune clé API configurée. Ouvrez l’onglet Réglages pour en saisir une.' });
+  const key = `${e.id}|${target}`;
+  if (!translating.has(key)) {
+    translating.set(key, (async () => {
+      const toName = target === 'en' ? 'English' : 'French';
+      const payload = {
+        messages: [
+          { role: 'system', content: `You translate trading analyses. Translate every text value of the JSON you receive into ${toName}. Keep the JSON structure, keys, array lengths and order exactly the same. Do not translate tickers, numbers, prices or indicator abbreviations (RSI, MACD, EMA…). Keep markdown formatting. Reply ONLY with the JSON object, no surrounding text.` },
+          { role: 'user', content: JSON.stringify(textSkeleton(e.result)) }
+        ],
+        temperature: 0.1,
+        max_tokens: 6000
+      };
+      const out = await chatWithFallback(baseUrl.replace(/\/+$/, ''), apiKey, resolveModel(baseUrl, config.settings.model), payload, 90000, 150000);
+      if (out.error) throw new Error(out.error);
+      if (!out.r.ok) throw new Error(`Erreur API (${out.r.status}) : ${extractApiError(out.j, out.r.status)}`);
+      const raw = (out.j && out.j.choices && out.j.choices[0] && out.j.choices[0].message && out.j.choices[0].message.content) || '';
+      const tr = extractJson(raw);
+      if (!tr || typeof tr !== 'object') throw new Error('Réponse de traduction illisible. Réessayez.');
+      // relit le fichier : une autre requête a pu modifier l'historique entre-temps
+      const list = loadAnalyses();
+      const cur = list.find(a => a.id === e.id);
+      if (!cur) throw new Error('Analyse introuvable.');
+      cur.translations = { ...(cur.translations || {}), [target]: mergeTranslation(cur.result, tr) };
+      saveJson(ANALYSES_FILE, list);
+      return cur;
+    })().finally(() => translating.delete(key)));
+  }
+  try {
+    res.json(await translating.get(key));
+  } catch (err) {
+    res.status(502).json({ error: `Traduction impossible : ${err.message}` });
+  }
 });
 
 app.delete('/api/analyses/:id', (req, res) => {

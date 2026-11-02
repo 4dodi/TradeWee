@@ -83,6 +83,10 @@ const PATTERNS = [
   [/^Prix indisponible\.$/, 'Price unavailable.'],
   [/^flux vide$/, 'empty feed'],
   [/^Alertes FinancialJuice indisponibles : (.*)$/s, 'FinancialJuice alerts unavailable: ~1'],
+  // traduction d'une analyse
+  [/^Rien à traduire : cette analyse n’a pas de plan\.$/, 'Nothing to translate: this analysis has no plan.'],
+  [/^Traduction impossible : (.*)$/s, 'Translation failed: ~1'],
+  [/^Réponse de traduction illisible\. Réessayez\.$/, 'Unreadable translation response. Try again.'],
   // échec d'une analyse lancée par une alerte TradingView (enregistré dans l'historique)
   [/^TradingView → (.*)$/s, 'TradingView → ~1']
 ];

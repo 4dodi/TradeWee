@@ -37,7 +37,9 @@ L'app s'ouvre sur <http://localhost:3000>.
 
 ## Langue (FR / EN)
 
-L'interface est disponible en **anglais** (par défaut) et en **français** : choisissez la langue avec le sélecteur 🌐 en bas de la barre latérale (ou ouvrez `http://localhost:3000/?lang=fr`). Le choix est mémorisé dans le navigateur. L'IA rédige ses analyses dans la langue choisie ; les analyses déjà enregistrées restent dans leur langue d'origine.
+L'interface est disponible en **anglais** (par défaut) et en **français** : choisissez la langue avec le sélecteur 🌐 en bas de la barre latérale (ou ouvrez `http://localhost:3000/?lang=fr`). Le choix est mémorisé dans le navigateur.
+
+L'IA rédige les nouvelles analyses dans la langue choisie. Quand vous ouvrez une analyse rédigée dans l'autre langue (par exemple une analyse antérieure à l'ajout de l'anglais), un bouton **🌐 Traduire** convertit son texte — les prix, niveaux et biais ne sont jamais modifiés. La traduction est enregistrée avec l'analyse : changer ensuite de langue est instantané et ne sollicite plus votre IA ; **Voir l'original** réaffiche le texte d'origine.
 
 ## Configuration de l'IA (obligatoire pour analyser)
 

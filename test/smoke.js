@@ -52,6 +52,10 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
   assert.strictEqual(await notFound(), 'Analysis not found.');
   assert.strictEqual(await notFound('fr'), 'Analyse introuvable.');
 
+  // traduction d'une analyse : analyse inconnue → 404 (traduit en anglais par défaut)
+  const trRes = await fetch(base + '/api/analyses/inconnu/translate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{"lang":"en"}' });
+  assert.strictEqual(trRes.status, 404);
+
   // Alertes TradingView : désactivées par défaut, puis protégées par un secret
   const hook = (body, headers = {}) => fetch(base + '/api/webhook/tradingview', { method: 'POST', headers, body });
   assert.strictEqual((await hook('{}')).status, 404, 'webhook désactivé par défaut');
