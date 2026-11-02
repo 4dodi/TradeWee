@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tradewee — Analyse de charts</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📈</text></svg>">
-  <link rel="stylesheet" href="css/style.css?v=13">
+  <link rel="stylesheet" href="css/style.css?v=14">
 </head>
 <body>
   <div class="layout">
@@ -385,6 +385,20 @@
           </div>
         </div>
 
+        <div class="card" id="tvl-card">
+          <h2 class="card-title">📈 Plans sur votre graphique TradingView</h2>
+          <p class="field-hint">TradingView ne permet pas aux applications externes de dessiner sur votre graphique. Installez une seule fois l’indicateur « Tradewee Levels » : il suffit ensuite de coller vos plans dans ses paramètres, et il affiche celui qui correspond au symbole du graphique.</p>
+          <ol class="tv-steps">
+            <li>Copiez l’indicateur, puis dans TradingView : Pine Editor → nouvel indicateur → collez → « Add to chart ». Enregistrez-le.</li>
+            <li>Copiez vos derniers plans (le plus récent pour chaque actif, 20 max).</li>
+            <li>Sur le graphique : paramètres de Tradewee Levels (⚙️) → collez dans « Plans » → OK.</li>
+          </ol>
+          <div class="btn-row">
+            <button type="button" class="btn btn-ghost" id="tvl-copy-ind">📋 Copier l’indicateur</button>
+            <button type="button" class="btn btn-primary" id="tvl-copy-all">📋 Copier tous mes derniers plans</button>
+          </div>
+        </div>
+
         <div class="card" id="tv-card">
           <h2 class="card-title">📡 Alertes TradingView → analyse automatique</h2>
           <p class="field-hint">Une alerte TradingView peut lancer une analyse dans Tradewee. TradingView n’envoie pas d’image : l’IA travaille à partir des données de l’alerte (prix, message) et, pour les cryptos, des 60 dernières bougies Binance. Les analyses reçues apparaissent dans l’historique avec 📡.</p>
@@ -430,7 +444,7 @@
   <div id="modal-overlay" hidden>
     <div class="modal" id="modal-box"></div>
   </div>
-  <script src="js/i18n.js?v=2"></script>
+  <script src="js/i18n.js?v=3"></script>
   <script src="js/util.js?v=16"></script>
   <script src="js/app.js?v=16"></script>
   <script src="js/assets.js?v=16"></script>
@@ -439,6 +453,6 @@
   <script src="js/alerts.js?v=16"></script>
   <script src="js/journal.js?v=16"></script>
   <script src="js/market.js?v=18"></script>
-  <script src="js/tradingview.js?v=1"></script>
+  <script src="js/tradingview.js?v=2"></script>
 </body>
 </html>

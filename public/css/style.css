@@ -498,3 +498,9 @@ code { background: var(--bg); padding: 1px 5px; border-radius: 5px; font-size: 1
 .tv-tag { font-size: 12px; }
 .modal.wide { max-width: 760px; }
 .warn-text { color: var(--orange) !important; }
+#tvl-card { margin-top: 16px; }
+.pine-line { width: 100%; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 12px; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; margin-bottom: 10px; }
+.btn-sm { padding: 4px 10px; font-size: 12.5px; }
+.tv-alt { margin-top: 6px; }
+.tv-alt summary { cursor: pointer; color: var(--muted); font-size: 13px; margin-bottom: 8px; }
+.tv-steps li { margin-bottom: 6px; }

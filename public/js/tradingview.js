@@ -68,29 +68,100 @@ window.TradingViewMgr = {
     return L.join('\n') + '\n';
   },
 
+  /* ---------- Indicateur « Tradewee Levels » (installé une fois) ---------- */
+  // Même normalisation que l'indicateur Pine : BTCUSDT / BTCUSD.P → BTCUSD
+  normSym(s) {
+    return String(s || '').toUpperCase().trim().replace(/\.P$/, '').replace(/PERP$/, '').replace(/USDT|USDC/g, 'USD');
+  },
+
+  // Une ligne de plan : TW1|SYMBOLE|BIAIS|ENTRÉE|ZONE_BASSE|ZONE_HAUTE|SL|TP1|TP2|TP3|DATE
+  levelsLine(entry) {
+    const r = entry && entry.result;
+    if (!r) return null;
+    const n = v => {
+      const x = typeof v === 'number' ? v : parseFloat(String(v ?? '').replace(',', '.'));
+      if (!Number.isFinite(x)) return '-';
+      const t2 = x.toFixed(10).replace(/0+$/, '');
+      return t2.endsWith('.') ? t2.slice(0, -1) : t2;
+    };
+    const sym = String(r.actif || entry.params?.asset || '').toUpperCase().split(':').pop().replace(/[^A-Z0-9._!-]/g, '');
+    if (!sym) return null;
+    const b = String(r.biais || '').toUpperCase();
+    const bias = b.includes('ACHAT') ? 'BUY' : b.includes('VENTE') ? 'SELL' : 'NEUTRAL';
+    const tps = (r.takeProfits || []).slice(0, 3).map(tp => n(tp && tp.niveau));
+    while (tps.length < 3) tps.push('-');
+    const lo = n(r.zoneEntree && r.zoneEntree.min), hi = n(r.zoneEntree && r.zoneEntree.max);
+    const fields = [n(r.entree), lo, hi, n(r.stopLoss), ...tps];
+    if (fields.every(v => v === '-')) return null;
+    const day = (entry.date ? new Date(entry.date) : new Date()).toISOString().slice(0, 10);
+    return ['TW1', sym, bias, ...fields, day].join('|');
+  },
+
+  // Plan le plus récent pour chaque actif de l'historique (20 actifs max)
+  latestPlansText() {
+    const seen = new Set(), lines = [];
+    for (const a of (APP.analyses || [])) {
+      const line = this.levelsLine(a);
+      if (!line) continue;
+      const key = this.normSym(line.split('|')[1]);
+      if (seen.has(key)) continue;
+      seen.add(key); lines.push(line);
+      if (lines.length >= 20) break;
+    }
+    return lines.join('\n');
+  },
+
+  async copyIndicator() {
+    try {
+      const r = await fetch('pine/tradewee-levels.pine');
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      await this.copy(await r.text(), t('Indicateur copié ✓ — collez-le dans le Pine Editor de TradingView.'));
+    } catch (e) { toast(e.message, 'err'); }
+  },
+
+  async copyAllPlans() {
+    if (!(APP.analyses || []).length) { try { APP.analyses = await api('/api/analyses'); } catch { /* ignore */ } }
+    const txt = this.latestPlansText();
+    if (!txt) { toast(t('Aucun plan avec des niveaux dans l’historique.'), 'err'); return; }
+    await this.copy(txt, t('{n} plan(s) copié(s) ✓ — collez-les dans le champ « Plans » de l’indicateur.', { n: txt.split('\n').length }));
+  },
+
   showPine(entry) {
+    const line = this.levelsLine(entry);
     const code = this.buildPine(entry);
-    if (!code) { toast(t('Aucun niveau à exporter pour ce plan.'), 'err'); return; }
+    if (!line && !code) { toast(t('Aucun niveau à exporter pour ce plan.'), 'err'); return; }
     const overlay = $('#modal-overlay'), box = $('#modal-box');
     box.classList.add('wide');
     box.innerHTML = `
       <h3>📈 ${esc(t('Tracer ce plan sur TradingView'))}</h3>
-      <div class="modal-sub">${esc(t('Ce script Pine dessine l’entrée, la zone d’entrée, le stop loss et les TP sur votre graphique.'))}</div>
+      <div class="modal-sub">${esc(t('TradingView ne permet pas aux applications externes de dessiner sur votre graphique : un copier-coller reste nécessaire, mais il est très rapide avec l’indicateur Tradewee Levels.'))}</div>
+      <h4 class="tv-sub">⚡ ${esc(t('Méthode rapide — indicateur Tradewee Levels (recommandé)'))}</h4>
       <ol class="tv-steps">
-        <li>${esc(t('Copiez le script ci-dessous.'))}</li>
-        <li>${esc(t('Dans TradingView, ouvrez le graphique de l’actif puis l’onglet « Pine Editor » en bas de l’écran.'))}</li>
-        <li>${esc(t('Créez un nouvel indicateur, remplacez tout le code par celui-ci, puis cliquez sur « Add to chart ».'))}</li>
+        <li><b>${esc(t('Une seule fois :'))}</b> <button class="btn btn-ghost btn-sm" id="pine-copy-ind">📋 ${esc(t('Copier l’indicateur'))}</button>
+          ${esc(t('puis, dans TradingView : Pine Editor → nouvel indicateur → collez → « Add to chart ». Enregistrez-le pour le retrouver dans vos indicateurs.'))}</li>
+        <li><button class="btn btn-primary btn-sm" id="pine-copy-line">📋 ${esc(t('Copier les niveaux'))}</button>
+          ${esc(t('ou'))} <button class="btn btn-ghost btn-sm" id="pine-copy-all">📋 ${esc(t('Copier tous mes derniers plans'))}</button></li>
+        <li>${esc(t('Sur le graphique, ouvrez les paramètres de Tradewee Levels (icône ⚙️), collez dans « Plans » puis OK. Le plan correspondant au symbole du graphique s’affiche.'))}</li>
       </ol>
-      <textarea class="pine-code" id="pine-code" readonly spellcheck="false"></textarea>
-      <div class="btn-row">
-        <button class="btn btn-ghost" id="pine-close">${esc(t('Fermer'))}</button>
-        <button class="btn btn-primary" id="pine-copy">📋 ${esc(t('Copier le script'))}</button>
-      </div>`;
-    $('#pine-code').value = code;
+      ${line ? `<input class="pine-line" id="pine-line" readonly>` : ''}
+      <details class="tv-alt">
+        <summary>${esc(t('Autre méthode : script autonome pour ce plan uniquement'))}</summary>
+        <p class="field-hint">${esc(t('À coller dans un nouvel indicateur du Pine Editor, comme ci-dessus. Utile pour garder un plan figé sur un graphique.'))}</p>
+        <textarea class="pine-code" id="pine-code" readonly spellcheck="false"></textarea>
+        <div class="btn-row"><button class="btn btn-ghost" id="pine-copy">📋 ${esc(t('Copier le script'))}</button></div>
+      </details>
+      <div class="btn-row"><button class="btn btn-ghost" id="pine-close">${esc(t('Fermer'))}</button></div>`;
+    if (line) $('#pine-line').value = line;
+    $('#pine-code').value = code || '';
     overlay.hidden = false;
     const close = () => { overlay.hidden = true; box.innerHTML = ''; box.classList.remove('wide'); };
     $('#pine-close').addEventListener('click', close);
-    $('#pine-copy').addEventListener('click', () => this.copy(code, t('Script copié ✓')));
+    $('#pine-copy-ind').addEventListener('click', () => this.copyIndicator());
+    $('#pine-copy-all').addEventListener('click', () => this.copyAllPlans());
+    $('#pine-copy-line').addEventListener('click', () => line
+      ? this.copy(line, t('Niveaux copiés ✓ — collez-les dans le champ « Plans » de l’indicateur.'))
+      : toast(t('Aucun niveau à exporter pour ce plan.'), 'err'));
+    $('#pine-copy').addEventListener('click', () => code && this.copy(code, t('Script copié ✓')));
   },
 
   async copy(text, okMsg) {
@@ -219,6 +290,8 @@ $('#tv-new-secret').addEventListener('click', async () => {
   TradingViewMgr.load();
 });
 $('#tv-test').addEventListener('click', () => TradingViewMgr.sendTest());
+$('#tvl-copy-ind').addEventListener('click', () => TradingViewMgr.copyIndicator());
+$('#tvl-copy-all').addEventListener('click', () => TradingViewMgr.copyAllPlans());
 $('#tv-events').addEventListener('click', async (e) => {
   const b = e.target.closest('.tv-open');
   if (!b) return;

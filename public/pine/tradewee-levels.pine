@@ -1,0 +1,100 @@
+//@version=6
+// ============================================================================
+// Tradewee Levels — install once, then paste plans from Tradewee.
+//
+// How to use
+// 1. Pine Editor → New indicator → paste this whole script → "Add to chart".
+// 2. In Tradewee, click "Copy levels" (one plan) or "Copy all latest plans".
+// 3. On the chart, open this indicator's settings (gear icon), paste into
+//    "Plans", click OK. The plan matching the chart's symbol is drawn.
+//
+// Plan line format (one per line, written by Tradewee):
+// TW1|SYMBOL|BIAS|ENTRY|ZONE_LOW|ZONE_HIGH|SL|TP1|TP2|TP3|DATE   ("-" = none)
+// Source: https://github.com/4dodi/TradeWee — MIT license
+// ============================================================================
+indicator("Tradewee Levels", overlay = true, max_lines_count = 50, max_labels_count = 50, max_boxes_count = 5)
+
+plansTxt    = input.text_area("", "Plans (paste from Tradewee)")
+symOverride = input.string("", "Use plan for symbol (empty = chart symbol)")
+showZone    = input.bool(true, "Show entry zone")
+showLabels  = input.bool(true, "Show labels")
+showInfo    = input.bool(true, "Show info box")
+colEntry    = input.color(color.new(#3b82f6, 0), "Entry")
+colSL       = input.color(color.new(#ef4444, 0), "Stop loss")
+colTP       = input.color(color.new(#22c55e, 0), "Take profits")
+
+// Symbols are compared without suffixes: BTCUSDT, BTCUSD.P and BTCUSD all match BTCUSD
+norm(string s) =>
+    string r = str.upper(str.trim(s))
+    r := str.replace_all(r, ".P", "")
+    r := str.replace_all(r, "PERP", "")
+    r := str.replace_all(r, "USDT", "USD")
+    r := str.replace_all(r, "USDC", "USD")
+    r
+
+num(string s) =>
+    string t = str.trim(s)
+    t == "-" or t == "" ? na : str.tonumber(t)
+
+// " (1.5R)" — reward multiple of a TP, empty when entry/SL are missing
+rrTxt(float tp, float entry, float risk) =>
+    not na(risk) and risk > 0 and not na(tp) and not na(entry) ? " (" + str.tostring(math.abs(tp - entry) / risk, "#.##") + "R)" : ""
+
+var array<line>  lns  = array.new<line>()
+var array<label> lbs  = array.new<label>()
+var box          zone = na
+var table        info = table.new(position.top_right, 1, 1)
+
+drawLevel(float price, color col, string lineStyle, int width, string txt) =>
+    if not na(price)
+        array.push(lns, line.new(bar_index - 1, price, bar_index, price, extend = extend.both, color = col, style = lineStyle, width = width))
+        if showLabels
+            array.push(lbs, label.new(bar_index + 3, price, txt + " " + str.tostring(price, format.mintick), style = label.style_label_left, color = col, textcolor = color.white, size = size.small))
+    price
+
+if barstate.islast
+    for l in lns
+        line.delete(l)
+    array.clear(lns)
+    for lb in lbs
+        label.delete(lb)
+    array.clear(lbs)
+    box.delete(zone)
+
+    string target = norm(symOverride != "" ? symOverride : syminfo.ticker)
+    string found = ""
+    for raw in str.split(plansTxt, "\n")
+        string ln = str.trim(raw)
+        if found == "" and str.startswith(ln, "TW1|")
+            array<string> parts = str.split(ln, "|")
+            if array.size(parts) >= 10
+                string ps = norm(array.get(parts, 1))
+                if ps != "" and (ps == target or str.startswith(target, ps) or str.startswith(ps, target))
+                    found := ln
+
+    string infoTxt = "Tradewee: no plan for " + syminfo.ticker
+    if found != ""
+        array<string> p = str.split(found, "|")
+        string bias = array.get(p, 2)
+        float entry = num(array.get(p, 3))
+        float zLo   = num(array.get(p, 4))
+        float zHi   = num(array.get(p, 5))
+        float sl    = num(array.get(p, 6))
+        float tp1   = num(array.get(p, 7))
+        float tp2   = num(array.get(p, 8))
+        float tp3   = num(array.get(p, 9))
+        string day  = array.size(p) > 10 ? array.get(p, 10) : ""
+        float risk  = not na(entry) and not na(sl) ? math.abs(entry - sl) : na
+
+        if showZone and not na(zLo) and not na(zHi)
+            zone := box.new(bar_index - 1, math.max(zLo, zHi), bar_index, math.min(zLo, zHi), border_color = color.new(colEntry, 70), bgcolor = color.new(colEntry, 88), extend = extend.both)
+
+        drawLevel(entry, colEntry, line.style_solid, 2, bias + " entry")
+        drawLevel(sl, colSL, line.style_solid, 2, "SL")
+        drawLevel(tp1, colTP, line.style_dashed, 2, "TP1" + rrTxt(tp1, entry, risk))
+        drawLevel(tp2, colTP, line.style_dashed, 1, "TP2" + rrTxt(tp2, entry, risk))
+        drawLevel(tp3, colTP, line.style_dashed, 1, "TP3" + rrTxt(tp3, entry, risk))
+        infoTxt := "Tradewee " + bias + " · " + array.get(p, 1) + (day != "" ? " · " + day : "")
+
+    if showInfo
+        table.cell(info, 0, 0, infoTxt, text_color = color.white, bgcolor = color.new(color.gray, 30), text_size = size.small)

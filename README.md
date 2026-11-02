@@ -65,15 +65,17 @@ The key is stored only on your machine, in `data/config.json` (excluded from Git
 
 ## TradingView
 
-### Draw a plan on your TradingView chart
+### Draw your plans on your TradingView chart
 
-Every analysis has a **📈 To TradingView** button. It generates a Pine Script indicator that draws the entry, the entry zone, the stop loss and TP1–TP3 (with their R multiple) on your chart:
+TradingView doesn't let outside apps draw on your chart, so one paste is needed — kept as short as possible with the **Tradewee Levels** indicator ([`public/pine/tradewee-levels.pine`](public/pine/tradewee-levels.pine)), installed once:
 
-1. Click **📈 To TradingView**, then **Copy script**.
-2. In TradingView, open the asset's chart, then the **Pine Editor** tab at the bottom of the screen.
-3. Create a new indicator, replace all the code with the copied script, and click **Add to chart**.
+1. **Once:** in ⚙️ Settings (or the **📈 To TradingView** button of any analysis), click **Copy the indicator**. In TradingView, open the **Pine Editor**, create a new indicator, paste, click **Add to chart** and save it.
+2. **For each plan:** click **Copy levels** (this plan) or **Copy all my latest plans** (the most recent plan for each asset, up to 20).
+3. On the chart, open the Tradewee Levels settings (⚙️), paste into **Plans**, click OK.
 
-The levels can be adjusted afterwards in the indicator's settings. Works with any TradingView account, including the free one.
+The indicator draws the plan matching the chart's symbol — entry zone, entry, stop loss and TP1–TP3 with their R multiple — and shows "no plan" otherwise. `BTCUSDT`, `BTCUSDT.P` and `BTCUSD` are treated as the same asset. Each plan is one line, e.g. `TW1|XAUUSD|BUY|2732|2728|2736|2712|2755|2778|2805|2026-11-02` (symbol, bias, entry, zone low, zone high, SL, TP1–TP3, date; `-` = none).
+
+The **📈 To TradingView** window also offers a standalone script for a single plan, if you prefer to keep one plan fixed on a chart. Works with any TradingView account, including the free one.
 
 ### Let TradingView alerts start analyses
 

@@ -65,15 +65,17 @@ La clé est stockée uniquement en local dans `data/config.json` (fichier exclu 
 
 ## TradingView
 
-### Tracer un plan sur votre graphique TradingView
+### Tracer vos plans sur votre graphique TradingView
 
-Chaque analyse a un bouton **📈 Vers TradingView**. Il génère un indicateur Pine Script qui trace l'entrée, la zone d'entrée, le stop loss et les TP1–TP3 (avec leur multiple de R) sur votre graphique :
+TradingView ne permet pas aux applications externes de dessiner sur votre graphique : un collage reste nécessaire, réduit au minimum grâce à l'indicateur **Tradewee Levels** ([`public/pine/tradewee-levels.pine`](public/pine/tradewee-levels.pine)), installé une seule fois :
 
-1. Cliquez sur **📈 Vers TradingView**, puis **Copier le script**.
-2. Dans TradingView, ouvrez le graphique de l'actif puis l'onglet **Pine Editor** en bas de l'écran.
-3. Créez un nouvel indicateur, remplacez tout le code par le script copié et cliquez sur **Add to chart**.
+1. **Une fois :** dans ⚙️ Réglages (ou via le bouton **📈 Vers TradingView** d'une analyse), cliquez sur **Copier l'indicateur**. Dans TradingView, ouvrez le **Pine Editor**, créez un nouvel indicateur, collez, cliquez sur **Add to chart** et enregistrez-le.
+2. **Pour chaque plan :** cliquez sur **Copier les niveaux** (ce plan) ou **Copier tous mes derniers plans** (le plus récent pour chaque actif, 20 max).
+3. Sur le graphique, ouvrez les paramètres de Tradewee Levels (⚙️), collez dans **Plans**, puis OK.
 
-Les niveaux restent modifiables dans les paramètres de l'indicateur. Fonctionne avec tout compte TradingView, y compris gratuit.
+L'indicateur trace le plan qui correspond au symbole du graphique — zone d'entrée, entrée, stop loss et TP1–TP3 avec leur multiple de R — et affiche « no plan » sinon. `BTCUSDT`, `BTCUSDT.P` et `BTCUSD` sont considérés comme le même actif. Chaque plan tient sur une ligne, ex. `TW1|XAUUSD|BUY|2732|2728|2736|2712|2755|2778|2805|2026-11-02` (symbole, biais, entrée, zone basse, zone haute, SL, TP1–TP3, date ; `-` = aucun).
+
+La fenêtre **📈 Vers TradingView** propose aussi un script autonome pour un seul plan, si vous préférez garder un plan figé sur un graphique. Fonctionne avec tout compte TradingView, y compris gratuit.
 
 ### Laisser les alertes TradingView lancer des analyses
 
