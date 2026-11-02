@@ -82,7 +82,9 @@ const PATTERNS = [
   [/^Prix indisponible \(HTTP (\d+)\)\.$/, 'Price unavailable (HTTP $1).'],
   [/^Prix indisponible\.$/, 'Price unavailable.'],
   [/^flux vide$/, 'empty feed'],
-  [/^Alertes FinancialJuice indisponibles : (.*)$/s, 'FinancialJuice alerts unavailable: ~1']
+  [/^Alertes FinancialJuice indisponibles : (.*)$/s, 'FinancialJuice alerts unavailable: ~1'],
+  // échec d'une analyse lancée par une alerte TradingView (enregistré dans l'historique)
+  [/^TradingView → (.*)$/s, 'TradingView → ~1']
 ];
 
 function toEnglish(str) {
@@ -98,7 +100,8 @@ function toEnglish(str) {
   return str;
 }
 
-const TEXT_KEYS = new Set(['error', 'note', 'warning']);
+// « raw » : seuls les messages d'échec du serveur correspondent à un motif ; une réponse brute de l'IA reste intacte
+const TEXT_KEYS = new Set(['error', 'note', 'warning', 'raw']);
 const LIST_KEYS = new Set(['avertissements', 'coherenceFixes']);
 
 // Copie traduite d'une réponse JSON (ne modifie jamais l'objet d'origine).

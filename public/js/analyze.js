@@ -209,7 +209,7 @@ window.AnalyzeMgr = {
       ${r.gestion ? `<div class="md-sec"><h3>🎛️ ${esc(t('Gestion de position'))}</h3><div class="md">${mdToHtml(r.gestion)}</div></div>` : ''}
       ${warns}
       ${comparisonHtml}
-      ${entry.id ? `<div class="btn-row" style="margin-top:14px"><button class="btn" id="btn-journal">📓 ${esc(t('Journaliser ce plan'))}</button><button class="btn" id="btn-notrade">🚫 ${esc(t('Non tradé'))}</button><button class="btn" id="btn-copyplan">📋 ${esc(t('Copier le plan'))}</button></div>` : ''}
+      <div class="btn-row" style="margin-top:14px">${entry.id ? `<button class="btn" id="btn-journal">📓 ${esc(t('Journaliser ce plan'))}</button><button class="btn" id="btn-notrade">🚫 ${esc(t('Non tradé'))}</button>` : ''}<button class="btn" id="btn-copyplan">📋 ${esc(t('Copier le plan'))}</button><button class="btn" id="btn-pine" title="${esc(t('Script Pine qui trace l’entrée, le SL et les TP sur votre graphique TradingView'))}">📈 ${esc(t('Vers TradingView'))}</button></div>
     `;
   },
 
@@ -232,7 +232,7 @@ window.AnalyzeMgr = {
         <div class="hist-item" data-id="${esc(a.id)}">
           ${thumb}
           <div class="hist-main">
-            <div class="hist-sym">${esc((a.result && a.result.actif) || a.params?.asset || '—')}
+            <div class="hist-sym">${a.params?.source === 'tradingview' ? `<span class="tv-tag" title="${esc(t('Analyse lancée par une alerte TradingView'))}">📡</span> ` : ''}${esc((a.result && a.result.actif) || a.params?.asset || '—')}
               ${a.params?.timeframe ? `<span class="muted">· ${esc(a.params.timeframe)}</span>` : ''}</div>
             <div class="hist-date">${new Date(a.date).toLocaleString(LOCALE)}</div>
           </div>
@@ -427,6 +427,9 @@ $('#result-body').addEventListener('click', async e => {
       await api(`/api/trades/${t.id}`, { method: 'PUT', body: JSON.stringify({ statut: 'annulé', raisonNonTrade: raison }) });
       toast(t('Trade marqué non tradé ({reason}) ✓', { reason: t(raison) }), 'ok');
     } catch (err) { toast(err.message, 'err'); }
+  }
+  if (e.target.closest('#btn-pine')) {
+    TradingViewMgr.showPine(APP.currentAnalysis);
   }
   if (e.target.closest('#btn-copyplan')) {
     await copyPlanMarkdown(APP.currentAnalysis);

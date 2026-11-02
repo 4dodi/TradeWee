@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tradewee — Analyse de charts</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📈</text></svg>">
-  <link rel="stylesheet" href="css/style.css?v=12">
+  <link rel="stylesheet" href="css/style.css?v=13">
 </head>
 <body>
   <div class="layout">
@@ -385,6 +385,34 @@
           </div>
         </div>
 
+        <div class="card" id="tv-card">
+          <h2 class="card-title">📡 Alertes TradingView → analyse automatique</h2>
+          <p class="field-hint">Une alerte TradingView peut lancer une analyse dans Tradewee. TradingView n’envoie pas d’image : l’IA travaille à partir des données de l’alerte (prix, message) et, pour les cryptos, des 60 dernières bougies Binance. Les analyses reçues apparaissent dans l’historique avec 📡.</p>
+          <label class="check"><input type="checkbox" id="tv-enabled"> Activer la réception des alertes TradingView</label>
+          <div id="tv-details" hidden>
+            <div class="field">
+              <label for="tv-url">URL du webhook (à coller dans l’alerte TradingView)</label>
+              <div class="input-row">
+                <input id="tv-url" readonly>
+                <button type="button" class="btn btn-ghost" id="tv-copy-url">📋 Copier</button>
+              </div>
+              <p class="field-hint" id="tv-url-hint">TradingView ne peut joindre qu’une adresse publique en HTTPS (port 443) : hébergez l’app en ligne ou utilisez un tunnel (ex. Cloudflare Tunnel). Les webhooks nécessitent un abonnement TradingView payant et la double authentification.</p>
+            </div>
+            <div class="field">
+              <label for="tv-template">Message de l’alerte (à coller dans le champ « Message »)</label>
+              <textarea id="tv-template" rows="5" readonly spellcheck="false"></textarea>
+              <div class="btn-row">
+                <button type="button" class="btn btn-ghost" id="tv-copy-template">📋 Copier le message</button>
+                <button type="button" class="btn btn-ghost" id="tv-new-secret">🔄 Nouveau secret</button>
+                <button type="button" class="btn btn-ghost" id="tv-test">🧪 Envoyer une alerte de test</button>
+              </div>
+              <p class="field-hint">Remplacez « Describe your signal » par la description de votre signal (ex. « RSI sous 30 sur H4 »). Le secret empêche quiconque d’autre de lancer des analyses : ne le partagez pas. L’alerte de test lance une vraie analyse (consomme votre quota IA).</p>
+            </div>
+            <h3 class="tv-sub">Dernières alertes reçues</h3>
+            <div id="tv-events" class="tv-events"><p class="muted">Aucune alerte reçue pour l’instant.</p></div>
+          </div>
+        </div>
+
         <div class="btn-row center">
           <button class="btn btn-primary" id="st-save">💾 Enregistrer les réglages</button>
           <button class="btn btn-ghost" id="st-backup">💾 Exporter la sauvegarde</button>
@@ -402,14 +430,15 @@
   <div id="modal-overlay" hidden>
     <div class="modal" id="modal-box"></div>
   </div>
-  <script src="js/i18n.js?v=1"></script>
+  <script src="js/i18n.js?v=2"></script>
   <script src="js/util.js?v=16"></script>
   <script src="js/app.js?v=16"></script>
   <script src="js/assets.js?v=16"></script>
-  <script src="js/analyze.js?v=16"></script>
+  <script src="js/analyze.js?v=17"></script>
   <script src="js/calendar.js?v=15"></script>
   <script src="js/alerts.js?v=16"></script>
   <script src="js/journal.js?v=16"></script>
   <script src="js/market.js?v=18"></script>
+  <script src="js/tradingview.js?v=1"></script>
 </body>
 </html>

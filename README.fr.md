@@ -17,6 +17,7 @@ Webapp locale d'analyse de trading : envoyez des **captures d'écran de charts e
 | **🔔 Alertes** | News en temps réel de **FinancialJuice** (financialjuice.com), rafraîchissement automatique, filtres par mots-clés, son + notifications bureau sur nouvelle alerte. Ces news peuvent aussi être injectées dans l'analyse IA (volet fondamental). |
 | **📓 Journal** | Plans journalisés (checklist pré-trade), statut, sortie, P&L en R et en $, winrate, espérance, performance par modèle IA. |
 | **📈 Marché** | Cotations, Fear & Greed, dominance BTC, Long/Short, tendances, surveillances de prix avec alertes. |
+| **📡 TradingView** | Envoyez un plan vers TradingView sous forme de script Pine qui trace les niveaux, et laissez les alertes TradingView lancer des analyses automatiquement (voir plus bas). |
 | **⚙️ Réglages** | Fournisseur IA (Z.ai / OpenAI / Gemini / personnalisé), clé API, modèle, solde et % de risque, limites de discipline, intervalle d'alertes, sauvegarde ZIP. |
 
 ## Installation & lancement
@@ -62,6 +63,34 @@ L'interface est disponible en **anglais** (par défaut) et en **français** : ch
 
 La clé est stockée uniquement en local dans `data/config.json` (fichier exclu de Git).
 
+## TradingView
+
+### Tracer un plan sur votre graphique TradingView
+
+Chaque analyse a un bouton **📈 Vers TradingView**. Il génère un indicateur Pine Script qui trace l'entrée, la zone d'entrée, le stop loss et les TP1–TP3 (avec leur multiple de R) sur votre graphique :
+
+1. Cliquez sur **📈 Vers TradingView**, puis **Copier le script**.
+2. Dans TradingView, ouvrez le graphique de l'actif puis l'onglet **Pine Editor** en bas de l'écran.
+3. Créez un nouvel indicateur, remplacez tout le code par le script copié et cliquez sur **Add to chart**.
+
+Les niveaux restent modifiables dans les paramètres de l'indicateur. Fonctionne avec tout compte TradingView, y compris gratuit.
+
+### Laisser les alertes TradingView lancer des analyses
+
+Une alerte TradingView peut envoyer un webhook à Tradewee, qui lance alors une analyse et l'ajoute à l'historique (marquée 📡). TradingView n'envoie pas d'image : l'IA travaille à partir des données de l'alerte (symbole, unité de temps, prix, votre message) et du contexte macro ; pour les cryptos, elle reçoit aussi les 60 dernières bougies de l'API publique Binance.
+
+**Prérequis**
+- Un abonnement TradingView payant avec la double authentification (condition de TradingView pour les webhooks).
+- Une adresse publique en **HTTPS** pour Tradewee, car TradingView ne peut pas joindre `localhost` : hébergez l'app en ligne (voir plus bas) ou utilisez un tunnel comme [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/do-more-with-tunnels/trycloudflare/) (`cloudflared tunnel --url http://localhost:3000`). Via un tunnel, seul le webhook est accessible : le reste de l'app reste limité à votre ordinateur.
+
+**Mise en place**
+1. Dans **⚙️ Réglages → Alertes TradingView**, cochez **Activer la réception des alertes TradingView**. Un secret est généré.
+2. Dans TradingView, créez une alerte. Dans **Notifications**, cochez **Webhook URL** et collez votre adresse publique suivie de `/api/webhook/tradingview`.
+3. Collez le **message de l'alerte** copié depuis les réglages de Tradewee dans le champ **Message** de l'alerte, et remplacez `Describe your signal` par votre signal (ex. `RSI sous 30 sur H4`).
+4. Utilisez **Envoyer une alerte de test** dans les réglages pour vérifier que tout fonctionne (cela lance une vraie analyse).
+
+Le secret empêche quiconque d'autre de déclencher des analyses : gardez-le privé et utilisez **Nouveau secret** s'il fuite. Les alertes identiques à moins de 60 s d'intervalle sont ignorées et 3 au maximum sont traitées à la fois, pour protéger votre quota IA.
+
 ## Variables d'environnement
 
 | Variable | Défaut | Rôle |
@@ -93,6 +122,7 @@ Pour l'utiliser en ligne, déployez le dépôt GitHub sur un hébergeur Node.js 
 
 - **Calendrier économique** : flux JSON public ForexFactory (`nfs.faireconomy.media`).
 - **Alertes** : flux RSS officiel de FinancialJuice (`financialjuice.com/feed.ashx?xy=rss`).
+- **Bougies pour les alertes TradingView (cryptos)** : données de marché publiques Binance (`api.binance.com`, repli sur `data-api.binance.vision`).
 - **Analyse** : votre fournisseur IA (appels serveur, votre clé ne quitte pas votre machine sauf vers ce fournisseur).
 
 ## Structure
@@ -101,8 +131,9 @@ Pour l'utiliser en ligne, déployez le dépôt GitHub sur un hébergeur Node.js 
 tradewee/
 ├── server.js          # serveur Express (API, proxy calendrier/alertes, appel IA)
 ├── i18n-server.js     # traduction anglaise des messages du serveur
+├── tradingview.js     # webhook TradingView → analyse automatique
 ├── public/            # interface (HTML/CSS/JS, aucun build nécessaire)
-│   └── js/            # i18n (FR/EN) / analyze / assets / calendar / alerts / journal / market
+│   └── js/            # i18n (FR/EN) / analyze / assets / calendar / alerts / journal / market / tradingview
 ├── data/              # créé au 1er lancement (non versionné) : config.json, analyses.json, trades.json, uploads/
 ├── test/smoke.js      # test de fumée (npm test)
 ├── .github/workflows/ # intégration continue GitHub Actions

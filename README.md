@@ -17,6 +17,7 @@ A self-hosted trading analysis web app: upload **screenshots of your charts and 
 | **🔔 Alerts** | Real-time news from **FinancialJuice** (financialjuice.com), auto-refresh, keyword filters, sound + desktop notifications on new alerts. This news can also be fed into the AI analysis (fundamental part). |
 | **📓 Journal** | Logged plans (pre-trade checklist), status, exit, P&L in R and $, win rate, expectancy, performance by AI model. |
 | **📈 Market** | Quotes, Fear & Greed, BTC dominance, Long/Short, trending coins, price watches with alerts. |
+| **📡 TradingView** | Send any plan to TradingView as a Pine Script that draws the levels, and let TradingView alerts start analyses automatically (see below). |
 | **⚙️ Settings** | AI provider (Gemini / OpenRouter / Mistral / GitHub Models / Z.ai / OpenAI / custom), API key, model, balance and risk %, discipline limits, alert interval, ZIP backup. |
 
 ## Install & run
@@ -62,6 +63,34 @@ The interface is available in **English** (default) and **French**. Pick the lan
 
 The key is stored only on your machine, in `data/config.json` (excluded from Git).
 
+## TradingView
+
+### Draw a plan on your TradingView chart
+
+Every analysis has a **📈 To TradingView** button. It generates a Pine Script indicator that draws the entry, the entry zone, the stop loss and TP1–TP3 (with their R multiple) on your chart:
+
+1. Click **📈 To TradingView**, then **Copy script**.
+2. In TradingView, open the asset's chart, then the **Pine Editor** tab at the bottom of the screen.
+3. Create a new indicator, replace all the code with the copied script, and click **Add to chart**.
+
+The levels can be adjusted afterwards in the indicator's settings. Works with any TradingView account, including the free one.
+
+### Let TradingView alerts start analyses
+
+A TradingView alert can send a webhook to Tradewee, which then runs an analysis automatically and adds it to the history (marked 📡). TradingView sends no chart image, so the AI works from the alert data (symbol, timeframe, price, your message) plus the macro context; for crypto pairs it also gets the last 60 candles from Binance's public API.
+
+**Requirements**
+- A paid TradingView plan with two-factor authentication (TradingView's condition for webhooks).
+- A public **HTTPS** address for Tradewee, because TradingView cannot reach `localhost`: host the app online (see below) or use a tunnel such as [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/do-more-with-tunnels/trycloudflare/) (`cloudflared tunnel --url http://localhost:3000`). Through a tunnel, only the webhook is reachable — the rest of the app stays limited to your computer.
+
+**Setup**
+1. In **⚙️ Settings → TradingView alerts**, tick **Receive TradingView alerts**. A secret is generated.
+2. In TradingView, create an alert. Under **Notifications**, tick **Webhook URL** and paste your public address followed by `/api/webhook/tradingview`.
+3. Paste the **alert message** copied from Tradewee's settings into the alert's **Message** field, and replace `Describe your signal` with your signal (e.g. `RSI below 30 on H4`).
+4. Use **Send a test alert** in the settings to check everything works (this runs a real analysis).
+
+The secret stops anyone else from triggering analyses — keep it private and use **New secret** if it leaks. Identical alerts within 60 s are ignored and at most 3 are processed at a time, to protect your AI quota.
+
 ## Environment variables
 
 | Variable | Default | Purpose |
@@ -94,6 +123,7 @@ To use it online, deploy the GitHub repository to a Node.js host (Render, Railwa
 - **Economic calendar**: ForexFactory public JSON feed (`nfs.faireconomy.media`).
 - **Alerts**: FinancialJuice official RSS feed (`financialjuice.com/feed.ashx?xy=rss`).
 - **Quotes & market overview**: CoinGecko, Frankfurter (ECB rates), alternative.me, Binance futures — public endpoints, no key.
+- **Candles for TradingView alerts (crypto)**: Binance public market data (`api.binance.com`, falling back to `data-api.binance.vision`).
 - **Analysis**: your AI provider (server-side calls; your key only ever goes to that provider).
 
 ## Project structure
@@ -102,8 +132,9 @@ To use it online, deploy the GitHub repository to a Node.js host (Render, Railwa
 TradeWee/
 ├── server.js          # Express server (API, calendar/alerts proxy, AI calls)
 ├── i18n-server.js     # English translation of server messages
+├── tradingview.js     # TradingView webhook → automatic analysis
 ├── public/            # interface (HTML/CSS/JS, no build step)
-│   └── js/            # i18n (EN/FR) / analyze / assets / calendar / alerts / journal / market
+│   └── js/            # i18n (EN/FR) / analyze / assets / calendar / alerts / journal / market / tradingview
 ├── data/              # created on first run (not versioned): config.json, analyses.json, trades.json, uploads/
 ├── test/smoke.js      # smoke test (npm test)
 ├── .github/workflows/ # GitHub Actions CI

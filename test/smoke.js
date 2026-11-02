@@ -52,6 +52,18 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
   assert.strictEqual(await notFound(), 'Analysis not found.');
   assert.strictEqual(await notFound('fr'), 'Analyse introuvable.');
 
+  // Alertes TradingView : désactivées par défaut, puis protégées par un secret
+  const hook = (body, headers = {}) => fetch(base + '/api/webhook/tradingview', { method: 'POST', headers, body });
+  assert.strictEqual((await hook('{}')).status, 404, 'webhook désactivé par défaut');
+  await fetch(base + '/api/webhook/enabled', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ enabled: true }) });
+  const st = await (await fetch(base + '/api/webhook/status')).json();
+  assert(st.enabled && st.secret.length >= 24, 'secret généré à l’activation');
+  assert(!JSON.stringify(await (await fetch(base + '/api/config')).json()).includes(st.secret), 'secret absent de /api/config');
+  assert.strictEqual((await hook(JSON.stringify({ secret: 'faux', symbol: 'BTCUSD' }))).status, 401);
+  assert.strictEqual((await hook('pas du json')).status, 400);
+  // sans clé API configurée, l'alerte est acceptée puis l'échec est consigné
+  assert.strictEqual((await hook(JSON.stringify({ secret: st.secret, symbol: 'EURUSD', interval: '60', volume: 'x' }))).status, 202);
+
   // protection DNS rebinding
   const http = require('http');
   const status = await new Promise((resolve, reject) => {
@@ -59,6 +71,13 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
       res => { res.resume(); resolve(res.statusCode); }).on('error', reject);
   });
   assert.strictEqual(status, 403, 'un Host étranger doit être refusé');
+  // …sauf pour le webhook TradingView (accessible via un tunnel), qui garde son secret
+  const hookStatus = await new Promise((resolve, reject) => {
+    const req = http.request({ host: '127.0.0.1', port: PORT, path: '/api/webhook/tradingview', method: 'POST', headers: { Host: 'tunnel.example' } },
+      res => { res.resume(); resolve(res.statusCode); });
+    req.on('error', reject); req.end('{"secret":"faux","symbol":"BTCUSD"}');
+  });
+  assert.strictEqual(hookStatus, 401, 'le webhook répond via un tunnel, avec contrôle du secret');
 
   console.log('✓ smoke test OK');
 })().catch(e => { console.error('✗', e.message); process.exitCode = 1; })

@@ -482,3 +482,19 @@ code { background: var(--bg); padding: 1px 5px; border-radius: 5px; font-size: 1
   .ov-grid { grid-template-columns: 1fr; }
   .ov-card.ov-wide { grid-column: span 1; }
 }
+
+/* ---- TradingView ---- */
+#tv-card { margin-top: 16px; }
+#tv-card textarea, .pine-code { width: 100%; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 12px; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 10px; resize: vertical; }
+.pine-code { min-height: 260px; white-space: pre; }
+.tv-sub { font-size: 13px; margin: 16px 0 6px; color: var(--muted); font-weight: 600; }
+.tv-events { display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; }
+.tv-ev { display: flex; gap: 10px; align-items: center; padding: 5px 8px; border: 1px solid var(--border); border-radius: 6px; }
+.tv-ev .when { color: var(--muted); min-width: 120px; }
+.tv-ev.ok .st { color: var(--green); }
+.tv-ev.error .st, .tv-ev.rejected .st { color: var(--red); }
+.tv-ev.skipped .st, .tv-ev.queued .st { color: var(--orange); }
+.tv-steps { margin: 8px 0 12px 18px; font-size: 13px; line-height: 1.6; }
+.tv-tag { font-size: 12px; }
+.modal.wide { max-width: 760px; }
+.warn-text { color: var(--orange) !important; }

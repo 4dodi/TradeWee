@@ -8,6 +8,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { languageMiddleware } = require('./i18n-server');
+const { setupTradingView } = require('./tradingview');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -55,6 +56,8 @@ const DEFAULT_CONFIG = {
     maxLossesConsecutive: 2,
     alertsIntervalSec: 30,
     useNewsContext: true,
+    webhookEnabled: false, // alertes TradingView → analyse automatique
+    webhookSecret: '',
     providers: [] // IA supplémentaires pour la comparaison : [{id,name,baseUrl,apiKey,model}]
   },
   assets: [
@@ -425,6 +428,27 @@ async function fetchWithTimeout(url, opts = {}, ms = 20000) {
 // ---------------------------------------------------------------------------
 app.disable('x-powered-by');
 
+// Alertes TradingView : point d'entrée public protégé par son propre secret,
+// monté AVANT le contrôle d'hôte et le mot de passe (TradingView ne peut pas s'authentifier).
+const tradingView = setupTradingView({
+  app, express, fetchWithTimeout, runAnalysis,
+  getSettings: () => config.settings,
+  saveSettings: (patch) => { Object.assign(config.settings, patch); saveConfig(); },
+  recordFailure: ({ asset, timeframe, notes, error }) => {
+    const entry = {
+      id: crypto.randomUUID(), date: new Date().toISOString(), model: null,
+      params: { asset: asset || null, timeframe: timeframe || null, notes: notes || '', direction: 'aucun', source: 'tradingview' },
+      images: [], result: null, raw: `TradingView → ${error}`, coherenceFixes: [], ratiosParTP: [],
+      taillePosition: null, macroEvents: [], comparisons: [], consensus: null
+    };
+    const list = loadAnalyses();
+    list.unshift(entry);
+    saveJson(ANALYSES_FILE, list.slice(0, 100));
+    return entry.id;
+  }
+});
+tradingView.mountWebhook();
+
 // En mode local : n'accepter que les requêtes adressées à localhost
 // (bloque les attaques par « DNS rebinding » depuis un site malveillant).
 if (IS_LOOPBACK) {
@@ -475,6 +499,7 @@ function resolveKeyFor(body, savedUrl, savedKey) {
 
 app.use(express.json({ limit: '40mb' }));
 app.use(languageMiddleware); // langue des réponses : en-tête X-Lang (en par défaut)
+tradingView.mountApi();
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(UPLOADS_DIR));
 
@@ -482,7 +507,7 @@ app.use('/uploads', express.static(UPLOADS_DIR));
 // Config & réglages
 // ---------------------------------------------------------------------------
 app.get('/api/config', (req, res) => {
-  const { apiKey, providers, ...rest } = config.settings;
+  const { apiKey, providers, webhookSecret, ...rest } = config.settings;
   res.json({
     settings: {
       ...rest,
@@ -784,14 +809,21 @@ function enforceCoherence(result, settings) {
 // ---------------------------------------------------------------------------
 // Analyse IA des captures d'écran
 // ---------------------------------------------------------------------------
-app.post('/api/analyze', async (req, res) => {
-  const { images, asset, timeframe, notes, direction } = req.body || {};
+/**
+ * Lance une analyse IA et l'enregistre dans l'historique.
+ * - Depuis l'onglet Analyse : avec 1 à 5 captures d'écran.
+ * - Depuis une alerte TradingView : sans image, à partir des données de l'alerte
+ *   (et des bougies récentes pour les cryptos).
+ * Retourne { status, body } (body = réponse JSON à renvoyer).
+ */
+async function runAnalysis({ images = [], asset, timeframe, notes, direction, compare = false, lang = 'en', source = 'upload', alertBlock = '' }) {
   const { baseUrl, apiKey, useNewsContext, balance, riskPercent } = config.settings;
   const model = resolveModel(baseUrl, config.settings.model);
+  const textOnly = source === 'tradingview';
 
-  if (!apiKey) return res.status(400).json({ error: 'Aucune clé API configurée. Ouvrez l’onglet Réglages pour en saisir une.' });
-  if (!Array.isArray(images) || images.length === 0) return res.status(400).json({ error: 'Aucune image fournie.' });
-  if (images.length > 5) return res.status(400).json({ error: '5 captures maximum par analyse.' });
+  if (!apiKey) return { status: 400, body: { error: 'Aucune clé API configurée. Ouvrez l’onglet Réglages pour en saisir une.' } };
+  if (!Array.isArray(images) || (!textOnly && images.length === 0)) return { status: 400, body: { error: 'Aucune image fournie.' } };
+  if (images.length > 5) return { status: 400, body: { error: '5 captures maximum par analyse.' } };
 
   // contexte : news récentes FinancialJuice (optionnel) + événements macro à fort impact
   let newsContext = '';
@@ -799,7 +831,7 @@ app.post('/api/analyze', async (req, res) => {
     try {
       const alerts = await getFinancialJuice();
       const top = alerts.slice(0, 10).map(a => `- [${a.date}] ${a.title}`).join('\n');
-      if (top) newsContext = req.lang === 'en'
+      if (top) newsContext = lang === 'en'
         ? `\n\nRECENT NEWS (FinancialJuice, for the fundamental part):\n${top}`
         : `\n\nNEWS RÉCENTES (FinancialJuice, pour le volet fondamental) :\n${top}`;
     } catch { /* pas bloquant */ }
@@ -810,25 +842,36 @@ app.post('/api/analyze', async (req, res) => {
   try {
     highImpact = await getHighImpactEvents(asset);
     if (highImpact.length) {
-      const inWord = req.lang === 'en' ? 'in' : 'dans';
+      const inWord = lang === 'en' ? 'in' : 'dans';
       const fmtIn = (m) => m >= 60
         ? `${inWord} ${Math.floor(m / 60)}h${String(m % 60).padStart(2, '0')}`
         : `${inWord} ${m} min`;
-      macroBlock = (req.lang === 'en'
+      macroBlock = (lang === 'en'
         ? `\n\nHIGH-IMPACT MACRO EVENTS IN THE NEXT 24 H (must be taken into account):\n`
         : `\n\nÉVÉNEMENTS MACRO À FORT IMPACT DANS LES 24 H (à prendre en compte obligatoirement) :\n`) +
         highImpact.map(e => `- [${fmtIn(e.minutesUntil)}] ${e.title} (${e.country})`).join('\n');
     }
   } catch { /* pas bloquant */ }
 
-  const en = req.lang === 'en';
+  const en = lang === 'en';
   const dirEn = { achat: 'BUY', vente: 'SELL' };
   const dirTxt = direction && direction !== 'aucun'
     ? (en
       ? `\nUser's preferred directional bias: ${dirEn[direction] || String(direction).toUpperCase()} (check it against your own reading; you may disagree with justification).`
       : `\nBiais directionnel souhaité par l'utilisateur : ${direction.toUpperCase()} (à confronter à ta propre lecture, tu peux le contredire avec justification).`)
     : '';
-  const userText = en ? `Analyze ${images.length === 1 ? 'this trading screenshot' : 'these trading screenshots'} and propose a complete trade plan.
+  const userText = textOnly ? (en ? `A TradingView alert has just fired. No chart image is provided: build a complete trade plan from the alert data${alertBlock.includes('CANDLES') ? ' and the recent candles' : ''} below, plus the macro context. Derive price levels from these numbers only. Add a warning in "avertissements" that this plan was produced without a chart image and must be checked on the chart.
+- Asset: ${asset || 'unknown'}
+- Timeframe: ${timeframe || 'unknown'}
+- User risk management: balance ${balance}, risk per trade ${riskPercent}%${alertBlock}${newsContext}${macroBlock}
+
+Reminder: reply only with the JSON in the requested schema, with all text values in English.` : `Une alerte TradingView vient de se déclencher. Aucune image de graphique n'est fournie : construis un plan de trade complet à partir des données de l'alerte${alertBlock.includes('BOUGIES') ? ' et des bougies récentes' : ''} ci-dessous, et du contexte macro. Déduis les niveaux de prix uniquement de ces données. Ajoute dans "avertissements" que ce plan a été produit sans image du graphique et doit être vérifié sur le chart.
+- Actif : ${asset || 'inconnu'}
+- Unité de temps : ${timeframe || 'inconnue'}
+- Gestion du risque de l'utilisateur : solde ${balance}, risque par trade ${riskPercent}%${alertBlock}${newsContext}${macroBlock}
+
+Rappel : réponds uniquement par le JSON au schéma demandé, en français.`)
+  : en ? `Analyze ${images.length === 1 ? 'this trading screenshot' : 'these trading screenshots'} and propose a complete trade plan.
 - Asset given by the user: ${asset || 'not specified (identify it on the image if possible)'}
 - Timeframe given: ${timeframe || 'not specified (identify it on the image if possible)'}
 - User notes / strategy: ${notes || 'none'}${dirTxt}
@@ -845,7 +888,7 @@ Rappel : réponds uniquement par le JSON au schéma demandé, en français.`;
   const content = [{ type: 'text', text: userText }];
   for (const img of images) {
     if (typeof img !== 'string' || !img.startsWith('data:image/')) {
-      return res.status(400).json({ error: 'Format d’image invalide (dataURL attendu).' });
+      return { status: 400, body: { error: 'Format d’image invalide (dataURL attendu).' } };
     }
     content.push({ type: 'image_url', image_url: { url: img } });
   }
@@ -863,7 +906,7 @@ Rappel : réponds uniquement par le JSON au schéma demandé, en français.`;
   // IA supplémentaires : même analyse en parallèle, pour comparaison
   let comparisons = [];
   const extraProviders = (config.settings.providers || []).filter(p => p.baseUrl && p.apiKey);
-  const wantCompare = req.body.compare === true && extraProviders.length > 0;
+  const wantCompare = compare === true && extraProviders.length > 0;
   if (wantCompare) {
     comparisons = await Promise.allSettled(extraProviders.slice(0, 4).map(async p => {
       const pUrl = p.baseUrl.replace(/\/+$/, '');
@@ -888,15 +931,14 @@ Rappel : réponds uniquement par le JSON au schéma demandé, en français.`;
   let aiRaw, usage = null, modelUsed = model;
   try {
     const out = await chatWithFallback(url, apiKey, model, payload, 120000, 240000);
-    if (out.error) return res.status(400).json({ error: out.error });
+    if (out.error) return { status: 400, body: { error: out.error } };
     if (!out.r.ok) {
       const msg = extractApiError(out.j, out.r.status);
-      return res.status(out.r.status === 401 || out.r.status === 403 ? 401 : 502)
-        .json({ error: `Erreur API (${out.r.status}) : ${msg}` });
+      return { status: out.r.status === 401 || out.r.status === 403 ? 401 : 502, body: { error: `Erreur API (${out.r.status}) : ${msg}` } };
     }
     aiRaw = (out.j && out.j.choices && out.j.choices[0] && out.j.choices[0].message && out.j.choices[0].message.content) || '';
     usage = (out.j && out.j.usage) || null;
-    if (out.r.ok && !aiRaw) return res.status(502).json({ error: 'Réponse vide ou illisible du fournisseur IA. Réessayez.' });
+    if (out.r.ok && !aiRaw) return { status: 502, body: { error: 'Réponse vide ou illisible du fournisseur IA. Réessayez.' } };
     modelUsed = out.model;
     if (out.discovered) {
       // mémorise le modèle valide pour les prochaines analyses
@@ -905,7 +947,7 @@ Rappel : réponds uniquement par le JSON au schéma demandé, en français.`;
     }
   } catch (e) {
     const msg = e.name === 'AbortError' ? 'Délai dépassé (180s) — réessayez avec moins d’images.' : e.message;
-    return res.status(502).json({ error: `Appel IA impossible : ${msg}` });
+    return { status: 502, body: { error: `Appel IA impossible : ${msg}` } };
   }
 
   const parsed = extractJson(aiRaw);
@@ -988,7 +1030,7 @@ Rappel : réponds uniquement par le JSON au schéma demandé, en français.`;
     id: crypto.randomUUID(),
     date: new Date().toISOString(),
     model: modelUsed,
-    params: { asset: asset || null, timeframe: timeframe || null, notes: notes || '', direction: direction || 'aucun' },
+    params: { asset: asset || null, timeframe: timeframe || null, notes: notes || '', direction: direction || 'aucun', source },
     images: savedFiles,
     result: parsed,
     raw: parsed ? null : aiRaw,
@@ -1004,7 +1046,7 @@ Rappel : réponds uniquement par le JSON au schéma demandé, en français.`;
   analyses.unshift(entry);
   saveJson(ANALYSES_FILE, analyses.slice(0, 100));
 
-  res.json({
+  return { status: 200, body: {
     ...entry,
     truncated,
     usage,
@@ -1016,7 +1058,16 @@ Rappel : réponds uniquement par le JSON au schéma demandé, en français.`;
       : truncated
         ? 'La réponse de l’IA a été coupée par la limite de longueur : les niveaux (entrée, SL, TP) sont exploitables, mais l’analyse écrite peut être incomplète. Relancez l’analyse pour un texte complet.'
         : null
+  } };
+}
+
+app.post('/api/analyze', async (req, res) => {
+  const b = req.body || {};
+  const out = await runAnalysis({
+    images: b.images, asset: b.asset, timeframe: b.timeframe, notes: b.notes,
+    direction: b.direction, compare: b.compare === true, lang: req.lang, source: 'upload'
   });
+  res.status(out.status).json(out.body);
 });
 
 // ---------------------------------------------------------------------------
