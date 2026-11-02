@@ -4,6 +4,10 @@ on:
   push:
   pull_request:
 
+# La CI ne fait que lire le code : droits minimaux pour le jeton GitHub.
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
