@@ -1,5 +1,8 @@
 # 📈 Tradewee App
 
+[![CI](https://github.com/4dodi/TradeWee/actions/workflows/ci.yml/badge.svg)](https://github.com/4dodi/TradeWee/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+
 Webapp locale d'analyse de trading : envoyez des **captures d'écran de charts et de stratégies**, une IA vision vous renvoie une **analyse technique + fondamentale** avec un **plan de trade complet** (entrée, zone d'entrée, TP, SL, ratio risque/rendement, taille de position).
 
 ## Fonctionnalités
@@ -72,7 +75,7 @@ git init
 git add .
 git commit -m "Tradewee App"
 git branch -M main
-git remote add origin https://github.com/<votre-compte>/tradewee-app.git
+git remote add origin https://github.com/4dodi/TradeWee.git
 git push -u origin main
 ```
 
@@ -109,3 +112,7 @@ tradewee/
 ## ⚠️ Avertissement
 
 Outil **éducatif**. Les analyses générées par IA sont indicatives et peuvent être erronées (une IA peut mal lire un graphique). Le trading comporte un risque de perte en capital. Ne tradez jamais une somme que vous ne pouvez pas vous permettre de perdre et validez toujours les niveaux sur votre plateforme avant tout ordre.
+
+## Licence
+
+Distribué sous licence **MIT** — voir le fichier [LICENSE](LICENSE). Vous pouvez utiliser, modifier et redistribuer ce code librement, à condition de conserver la mention de copyright. Le logiciel est fourni « tel quel », sans garantie.

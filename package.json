@@ -13,5 +13,6 @@
   "dependencies": {
     "express": "^4.21.2"
   },
-  "private": true
+  "private": true,
+  "license": "MIT"
 }
