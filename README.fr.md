@@ -12,7 +12,7 @@ Webapp locale d'analyse de trading : envoyez des **captures d'écran de charts e
 | Onglet | Description |
 |---|---|
 | **📊 Analyse** | Glissez 1 à 5 captures d'écran → l'IA lit le graphique (structure, indicateurs, figures, tracés) et renvoie : biais (ACHAT/VENTE/NEUTRE), confiance %, entrée + zone, SL, TP1-TP3, R:R, figures détectées, niveaux clés, analyses technique et fondamentale détaillées, conditions d'invalidation, gestion de position et taille suggérée selon votre risque. Historique des analyses conservé. |
-| **⭐ Actifs** | Watchlist : ajouter / modifier / supprimer des actifs (forex, crypto, indices, actions, matières premières). |
+| **⭐ Actifs** | Watchlist : ajouter / modifier / supprimer des actifs (forex, crypto, indices, actions, matières premières). Le choix d'un type propose ses 20 actifs les plus populaires (dans la liste du champ Symbole et en boutons à un clic) et remplit la description ; le champ Actif de l'onglet Analyse les propose aussi. |
 | **📅 Calendrier** | Calendrier économique de la semaine (source ForexFactory), groupé par jour, filtrable par devise et par recherche, compte à rebours avant le prochain événement à fort impact. |
 | **🔔 Alertes** | News en temps réel de **FinancialJuice** (financialjuice.com), rafraîchissement automatique, filtres par mots-clés, son + notifications bureau sur nouvelle alerte. Ces news peuvent aussi être injectées dans l'analyse IA (volet fondamental). |
 | **📓 Journal** | Plans journalisés (checklist pré-trade), statut, sortie, P&L en R et en $, winrate, espérance, performance par modèle IA. |

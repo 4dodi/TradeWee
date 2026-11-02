@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tradewee — Analyse de charts</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📈</text></svg>">
-  <link rel="stylesheet" href="css/style.css?v=16">
+  <link rel="stylesheet" href="css/style.css?v=17">
 </head>
 <body>
   <div class="layout">
@@ -125,7 +125,7 @@
         <div class="card">
           <form class="asset-form" id="asset-form">
             <input type="hidden" id="as-id">
-            <div class="field"><label for="as-symbol">Symbole</label><input id="as-symbol" required placeholder="ex : XAUUSD"></div>
+            <div class="field"><label for="as-symbol">Symbole</label><input id="as-symbol" list="as-symbol-list" required placeholder="ex : XAUUSD" autocomplete="off"><datalist id="as-symbol-list"></datalist></div>
             <div class="field">
               <label for="as-type">Type</label>
               <select id="as-type">
@@ -140,6 +140,7 @@
             <button class="btn btn-primary" type="submit" id="as-submit">➕ Ajouter</button>
             <button class="btn btn-ghost" type="button" id="as-cancel" hidden>Annuler</button>
           </form>
+          <div class="chips as-suggest" id="as-suggest"></div>
           <div class="table-wrap">
             <table class="table" id="assets-table">
               <thead><tr><th>Symbole</th><th>Type</th><th>Notes</th><th></th></tr></thead>
@@ -472,10 +473,11 @@
   <div id="modal-overlay" hidden>
     <div class="modal" id="modal-box"></div>
   </div>
-  <script src="js/i18n.js?v=5"></script>
+  <script src="js/i18n.js?v=6"></script>
   <script src="js/util.js?v=16"></script>
+  <script src="js/symbols.js?v=1"></script>
   <script src="js/app.js?v=16"></script>
-  <script src="js/assets.js?v=16"></script>
+  <script src="js/assets.js?v=17"></script>
   <script src="js/analyze.js?v=19"></script>
   <script src="js/calendar.js?v=15"></script>
   <script src="js/alerts.js?v=16"></script>

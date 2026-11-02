@@ -548,6 +548,11 @@ const EN = {
   'Collez l’URL ci-dessous et cliquez sur Connecter.': 'Paste the URL below and click Connect.',
   'Lors de l’autorisation, Google affiche « Google n’a pas validé cette application » : c’est normal pour un script personnel. Cliquez sur Paramètres avancés → Accéder au projet. « Tout le monde » permet à Tradewee d’écrire dans la feuille sans connexion Google ; seul le jeton secret inclus dans le script l’autorise.': 'When authorizing, Google shows “Google hasn’t verified this app”: that’s normal for a personal script. Click Advanced → Go to the project. “Anyone” lets Tradewee write to the sheet without a Google sign-in; only the secret token inside the script allows it.',
 
+  // ---- Suggestions d'actifs
+  'Populaires — {type} :': 'Popular — {type}:',
+  '{name} — déjà dans votre liste': '{name} — already in your list',
+  '{sym} est déjà dans votre liste.': '{sym} is already in your list.',
+
   // ---- Divers
   'Erreur {n}': 'Error {n}',
   'à l’instant': 'just now',

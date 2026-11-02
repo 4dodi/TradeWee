@@ -19,9 +19,41 @@ window.AssetsMgr = {
           </td>
         </tr>`).join('');
     }
-    // datalist de l'onglet analyse
+    // datalist de l'onglet analyse : la watchlist d'abord, puis les actifs populaires
     const dl = $('#asset-list');
-    if (dl) dl.innerHTML = APP.assets.map(a => `<option value="${esc(a.symbol)}">`).join('');
+    if (dl) {
+      const mine = new Set(APP.assets.map(a => a.symbol));
+      dl.innerHTML = APP.assets.map(a => `<option value="${esc(a.symbol)}" label="${esc(a.notes || TYPE_LABELS[a.type] || '')}">`).join('')
+        + SymbolSuggest.all().filter(x => !mine.has(x.symbol))
+          .map(x => `<option value="${esc(x.symbol)}" label="${esc(x.name + ' · ' + (TYPE_LABELS[x.type] || ''))}">`).join('');
+    }
+    this.renderSuggestions();
+  },
+
+  /* ---------- Suggestions : 20 actifs populaires du type choisi ---------- */
+  renderSuggestions() {
+    const type = $('#as-type').value;
+    const list = SymbolSuggest.list(type);
+    // liste déroulante du champ Symbole
+    $('#as-symbol-list').innerHTML = list.map(x => `<option value="${esc(x.symbol)}" label="${esc(x.name)}">`).join('');
+    // boutons rapides (✓ = déjà dans la watchlist)
+    const mine = new Set(APP.assets.map(a => a.symbol));
+    $('#as-suggest').innerHTML = `<span class="muted">${esc(t('Populaires — {type} :', { type: TYPE_LABELS[type] || type }))}</span>`
+      + list.map(x => {
+        const has = mine.has(x.symbol);
+        return `<button type="button" class="chip-btn sugg ${has ? 'on' : ''}" data-sym="${esc(x.symbol)}" title="${esc(has ? t('{name} — déjà dans votre liste', { name: x.name }) : x.name)}">${has ? '✓ ' : ''}${esc(x.symbol)}</button>`;
+      }).join('');
+  },
+
+  // Remplit le formulaire à partir d'une suggestion (type et notes inclus)
+  applySuggestion(symbol) {
+    const s = SymbolSuggest.find(symbol);
+    if (!s) return false;
+    $('#as-symbol').value = s.symbol;
+    if ($('#as-type').value !== s.type) { $('#as-type').value = s.type; this.renderSuggestions(); }
+    const notes = $('#as-notes');
+    if (!notes.value.trim() || notes.dataset.auto === '1') { notes.value = s.name; notes.dataset.auto = '1'; }
+    return true;
   },
 
   startEdit(id) {
@@ -36,12 +68,28 @@ window.AssetsMgr = {
   },
 
   resetForm() {
+    const type = $('#as-type').value; // garder le type choisi : pratique pour ajouter plusieurs actifs du même type
     $('#asset-form').reset();
+    $('#as-type').value = type;
     $('#as-id').value = '';
     $('#as-submit').textContent = t('➕ Ajouter');
     $('#as-cancel').hidden = true;
+    $('#as-notes').dataset.auto = '';
+    this.renderSuggestions();
   }
 };
+
+$('#as-type').addEventListener('change', () => AssetsMgr.renderSuggestions());
+// symbole choisi dans la liste (ou tapé) : type et description remplis automatiquement
+$('#as-symbol').addEventListener('change', () => AssetsMgr.applySuggestion($('#as-symbol').value));
+$('#as-notes').addEventListener('input', () => { $('#as-notes').dataset.auto = ''; });
+$('#as-suggest').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-sym]');
+  if (!b) return;
+  if (b.classList.contains('on')) { toast(t('{sym} est déjà dans votre liste.', { sym: b.dataset.sym })); return; }
+  AssetsMgr.applySuggestion(b.dataset.sym);
+  $('#as-submit').focus();
+});
 
 $('#asset-form').addEventListener('submit', async (e) => {
   e.preventDefault();

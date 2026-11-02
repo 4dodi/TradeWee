@@ -518,3 +518,7 @@ code { background: var(--bg); padding: 1px 5px; border-radius: 5px; font-size: 1
 #gs-card { margin-top: 16px; }
 .gs-status { font-size: 13.5px; margin: 6px 0 10px; }
 .gs-status a { color: var(--accent); }
+/* ---- Suggestions d'actifs ---- */
+.as-suggest { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 4px 0 14px; font-size: 12.5px; }
+.as-suggest .muted { margin-right: 4px; }
+.chip-btn.sugg { font-family: inherit; }

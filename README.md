@@ -12,7 +12,7 @@ A self-hosted trading analysis web app: upload **screenshots of your charts and 
 | Tab | Description |
 |---|---|
 | **📊 Analysis** | Drop 1 to 5 screenshots → the AI reads the chart (structure, indicators, patterns, drawings) and returns: bias (BUY/SELL/NEUTRAL), confidence %, entry + zone, SL, TP1–TP3, R:R, detected patterns, key levels, detailed technical and fundamental analysis, invalidation conditions, position management and a suggested size based on your risk. Analyses are kept in a history. Optional comparison across several AIs with a consensus. |
-| **⭐ Assets** | Watchlist: add / edit / delete assets (forex, crypto, indices, stocks, commodities). |
+| **⭐ Assets** | Watchlist: add / edit / delete assets (forex, crypto, indices, stocks, commodities). Picking a type suggests its 20 most popular assets (in the Symbol list and as one-click buttons) and fills in the description; the Analysis tab's Asset field offers them too. |
 | **📅 Calendar** | This week's economic calendar (source: ForexFactory), grouped by day, filterable by currency and search, with a countdown to the next high-impact event. |
 | **🔔 Alerts** | Real-time news from **FinancialJuice** (financialjuice.com), auto-refresh, keyword filters, sound + desktop notifications on new alerts. This news can also be fed into the AI analysis (fundamental part). |
 | **📓 Journal** | Logged plans (pre-trade checklist), status, exit, P&L in R and $, win rate, expectancy, performance by AI model. |
