@@ -1,4 +1,4 @@
-# 📈 TradeWeeb App
+# 📈 Tradewee App
 
 Webapp locale d'analyse de trading : envoyez des **captures d'écran de charts et de stratégies**, une IA vision vous renvoie une **analyse technique + fondamentale** avec un **plan de trade complet** (entrée, zone d'entrée, TP, SL, ratio risque/rendement, taille de position).
 
@@ -70,15 +70,15 @@ Le dossier `data/` (votre **clé API**, vos analyses, votre journal et vos captu
 ```bash
 git init
 git add .
-git commit -m "TradeWeeb App"
+git commit -m "Tradewee App"
 git branch -M main
-git remote add origin https://github.com/<votre-compte>/tradeweeb-app.git
+git remote add origin https://github.com/<votre-compte>/tradewee-app.git
 git push -u origin main
 ```
 
 Un workflow GitHub Actions (`.github/workflows/ci.yml`) lance `npm test` à chaque push (Node 18, 20 et 22).
 
-> ⚠️ **GitHub Pages ne peut pas héberger cette app** : Pages ne sert que des fichiers statiques, alors que TradeWeeb a besoin de son serveur Node (appels IA avec votre clé, proxy calendrier/alertes, stockage du journal).
+> ⚠️ **GitHub Pages ne peut pas héberger cette app** : Pages ne sert que des fichiers statiques, alors que Tradewee a besoin de son serveur Node (appels IA avec votre clé, proxy calendrier/alertes, stockage du journal).
 
 Pour l'utiliser en ligne, déployez le dépôt GitHub sur un hébergeur Node.js (Render, Railway, Fly.io, un VPS…) :
 
@@ -96,7 +96,7 @@ Pour l'utiliser en ligne, déployez le dépôt GitHub sur un hébergeur Node.js 
 ## Structure
 
 ```
-tradeweebApp/
+tradewee/
 ├── server.js          # serveur Express (API, proxy calendrier/alertes, appel IA)
 ├── public/            # interface (HTML/CSS/JS, aucun build nécessaire)
 │   └── js/            # analyze / assets / calendar / alerts / settings

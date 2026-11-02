@@ -1,9 +1,9 @@
 @echo off
 chcp 65001 >nul
 cd /d "%~dp0"
-title TradeWeeb App
+title Tradewee App
 echo ============================================
-echo   TradeWeeb - Analyse de charts de trading
+echo   Tradewee - Analyse de charts de trading
 echo ============================================
 if not exist node_modules (
   echo Premiere installation des dependances...

@@ -1,5 +1,5 @@
 /**
- * TradeWeeb App — serveur local
+ * Tradewee App — serveur local
  * Analyse de captures d'écran de charts via IA vision (API compatible OpenAI),
  * gestion d'actifs, calendrier économique (ForexFactory) et alertes (FinancialJuice RSS).
  */
@@ -200,7 +200,7 @@ function resolveModel(baseUrl, model) {
 // ---------------------------------------------------------------------------
 // Prompt IA
 // ---------------------------------------------------------------------------
-const SYSTEM_PROMPT = `Tu es "TradeWeeb Analyst", analyste trading senior (15 ans d'expérience) expert en analyse technique chartiste, price action et analyse fondamentale macro.
+const SYSTEM_PROMPT = `Tu es "Tradewee Analyst", analyste trading senior (15 ans d'expérience) expert en analyse technique chartiste, price action et analyse fondamentale macro.
 
 MÉTHODE D'ANALYSE :
 1. Lis attentivement CHAQUE image fournie : type de graphique, actif, unité de temps, bougies et structure, indicateurs visibles (RSI, MACD, EMA/SMA, Volume, Bollinger, Stochastique...), tracés (supports/résistances, lignes de tendance, figures, zones d'offre/demande, Fibonacci, triangles...) et tout texte ou notes de stratégie visibles sur la capture.
@@ -409,7 +409,7 @@ if (APP_PASSWORD) {
       const user = decoded.slice(0, i), pass = decoded.slice(i + 1);
       if (i !== -1 && safeEqual(user, APP_USER) & safeEqual(pass, APP_PASSWORD)) return next();
     }
-    res.set('WWW-Authenticate', 'Basic realm="TradeWeeb", charset="UTF-8"');
+    res.set('WWW-Authenticate', 'Basic realm="Tradewee", charset="UTF-8"');
     res.status(401).send('Authentification requise.');
   });
 }
@@ -1201,7 +1201,7 @@ app.get('/api/backup', (req, res) => {
     }
     const zip = buildZip(files);
     res.setHeader('Content-Type', 'application/zip');
-    res.setHeader('Content-Disposition', `attachment; filename="tradeweeb-backup-${new Date().toISOString().slice(0, 10)}.zip"`);
+    res.setHeader('Content-Disposition', `attachment; filename="tradewee-backup-${new Date().toISOString().slice(0, 10)}.zip"`);
     res.send(zip);
   } catch (e) {
     res.status(500).json({ error: `Sauvegarde impossible : ${e.message}` });
@@ -1732,7 +1732,7 @@ app.get('/api/alerts', async (req, res) => {
 // ---------------------------------------------------------------------------
 app.listen(PORT, HOST, () => {
   const shown = IS_LOOPBACK ? 'localhost' : HOST;
-  console.log(`\n  TradeWeeb App démarrée : http://${shown}:${PORT}${APP_PASSWORD ? ' (mot de passe actif)' : ''}\n`);
+  console.log(`\n  Tradewee App démarrée : http://${shown}:${PORT}${APP_PASSWORD ? ' (mot de passe actif)' : ''}\n`);
   if (process.platform === 'win32' && IS_LOOPBACK && !process.env.NO_OPEN) {
     require('child_process').exec(`start "" http://localhost:${PORT}`);
   }

@@ -74,7 +74,7 @@ window.AlertsMgr = {
         const badge = $('#badge-alerts');
         badge.hidden = false;
         badge.textContent = this.unread > 99 ? '99+' : this.unread;
-        document.title = `(${this.unread}) TradeWeeb — Analyse de charts`;
+        document.title = `(${this.unread}) Tradewee — Analyse de charts`;
       }
     }
     for (const id of ids) this.seen.add(id);
@@ -115,7 +115,7 @@ window.AlertsMgr = {
     this.unread = 0;
     const badge = $('#badge-alerts');
     badge.hidden = true;
-    document.title = 'TradeWeeb — Analyse de charts';
+    document.title = 'Tradewee — Analyse de charts';
   }
 };
 

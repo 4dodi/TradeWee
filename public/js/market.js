@@ -108,7 +108,7 @@ window.MarketMgr = {
       toast(msg, 'ok');
       try {
         if (Notification.permission === 'granted' && document.hidden) {
-          new Notification('🔔 TradeWeeb — Surveillance de prix', { body: msg });
+          new Notification('🔔 Tradewee — Surveillance de prix', { body: msg });
         }
       } catch { /* notifications indisponibles */ }
       if (!silent) this.beep();
