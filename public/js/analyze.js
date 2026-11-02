@@ -5,7 +5,7 @@ window.AnalyzeMgr = {
     const imgs = Array.from(files).filter(f => f.type.startsWith('image/')).slice(0, 5);
     if (imgs.length === 0) return;
     let room = 5 - APP.pendingImages.length;
-    if (room <= 0) { toast('5 captures maximum — supprimez-en une d’abord.', 'err'); return; }
+    if (room <= 0) { toast(t('5 captures maximum — supprimez-en une d’abord.'), 'err'); return; }
     for (const f of imgs.slice(0, room)) {
       const reader = new FileReader();
       reader.onload = () => {
@@ -14,7 +14,7 @@ window.AnalyzeMgr = {
       };
       reader.readAsDataURL(f);
     }
-    if (imgs.length > room) toast(`Seules ${room} image(s) ajoutée(s) (limite : 5).`);
+    if (imgs.length > room) toast(t('Seules {n} image(s) ajoutée(s) (limite : 5).', { n: room }));
   },
 
   renderThumbs() {
@@ -22,7 +22,7 @@ window.AnalyzeMgr = {
     c.innerHTML = APP.pendingImages.map((img, i) => `
       <div class="thumb">
         <img src="${img.dataUrl}" alt="">
-        <button class="rm" data-i="${i}" title="Retirer">✕</button>
+        <button class="rm" data-i="${i}" title="${esc(t('Retirer'))}">✕</button>
       </div>`).join('');
   },
 
@@ -31,14 +31,14 @@ window.AnalyzeMgr = {
   /* ---------- Appel analyse ---------- */
   async run() {
     const btn = $('#btn-analyze');
-    if (APP.pendingImages.length === 0) { toast('Ajoutez au moins une capture d’écran.', 'err'); return; }
+    if (APP.pendingImages.length === 0) { toast(t('Ajoutez au moins une capture d’écran.'), 'err'); return; }
     if (!APP.settings || !APP.settings.hasKey) {
-      toast('Configurez d’abord votre clé API dans l’onglet Réglages.', 'err');
+      toast(t('Configurez d’abord votre clé API dans l’onglet Réglages.'), 'err');
       document.querySelector('[data-tab="settings"]').click();
       return;
     }
     btn.disabled = true;
-    btn.textContent = '⏳ Analyse en cours (peut prendre 1 à 2 min)…';
+    btn.textContent = t('⏳ Analyse en cours (peut prendre 1 à 2 min)…');
     try {
       const j = await api('/api/analyze', {
         method: 'POST',
@@ -53,7 +53,7 @@ window.AnalyzeMgr = {
       });
       AnalyzeMgr.showResult(j);
       if (j.warning) toast(j.warning, 'err');
-      else toast('Analyse terminée ✓', 'ok');
+      else toast(t('Analyse terminée ✓'), 'ok');
       APP.pendingImages = [];
       AnalyzeMgr.renderThumbs();
       await AnalyzeMgr.refreshHistory();
@@ -61,7 +61,7 @@ window.AnalyzeMgr = {
       toast(e.message, 'err');
     } finally {
       btn.disabled = false;
-      btn.textContent = '⚡ Analyser';
+      btn.textContent = t('⚡ Analyser');
     }
   },
 
@@ -74,8 +74,8 @@ window.AnalyzeMgr = {
     const r = entry.result;
     if (!r) {
       body.innerHTML = `
-        <div class="warn-box">⚠️ L'IA n'a pas renvoyé de JSON exploitable. Réponse brute :</div>
-        <div class="raw-box">${esc(entry.raw || '(vide)')}</div>`;
+        <div class="warn-box">${esc(t('⚠️ L’IA n’a pas renvoyé de JSON exploitable. Réponse brute :'))}</div>
+        <div class="raw-box">${esc(entry.raw || t('(vide)'))}</div>`;
       return;
     }
     const bias = String(r.biais || 'NEUTRE').toUpperCase().includes('ACHAT') ? 'ACHAT'
@@ -88,20 +88,20 @@ window.AnalyzeMgr = {
         <div class="v">${fmtNum(tp && tp.niveau)}</div>
       </div>`).join('');
     const zone = r.zoneEntree && (r.zoneEntree.min != null || r.zoneEntree.max != null)
-      ? `<p class="zone-note">🎯 Zone d'entrée : <b>${fmtNum(r.zoneEntree.min)} – ${fmtNum(r.zoneEntree.max)}</b></p>` : '';
+      ? `<p class="zone-note">🎯 ${esc(t('Zone d’entrée :'))} <b>${fmtNum(r.zoneEntree.min)} – ${fmtNum(r.zoneEntree.max)}</b></p>` : '';
     const rr = r.ratioRisqueRendement
-      ? `<p class="rr-note">⚖️ Ratio risque/rendement (TP1) : <b>${fmtNum(r.ratioRisqueRendement)}</b></p>` : '';
+      ? `<p class="rr-note">⚖️ ${esc(t('Ratio risque/rendement (TP1) :'))} <b>${fmtNum(r.ratioRisqueRendement)}</b></p>` : '';
 
     // Taille de position suggérée — valeurs serveur (result.taillePosition) si présentes,
     // sinon calcul local avec distance = Math.abs(entree - stopLoss)
     let sizing = '';
     const assetType = (APP.assets.find(a => (r.actif || '').toUpperCase().includes(a.symbol)) || {}).type;
     const fmtSize = (units) => assetType === 'forex'
-      ? `${(units / 100000).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} lot (${units.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} unités)`
-      : `${units.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} unités`;
+      ? t('{lots} lot ({units} unités)', { lots: (units / 100000).toLocaleString(LOCALE, { minimumFractionDigits: 2, maximumFractionDigits: 2 }), units: units.toLocaleString(LOCALE, { maximumFractionDigits: 0 }) })
+      : t('{units} unités', { units: units.toLocaleString(LOCALE, { maximumFractionDigits: 2 }) });
     if (r.taillePosition && r.taillePosition.unites != null) {
       const tp = r.taillePosition;
-      sizing = `<p class="size-note">💰 Taille de position (risque ${fmtNum(tp.risqueMonetaire)} / distance SL ${fmtNum(tp.distanceStop)}) :
+      sizing = `<p class="size-note">💰 ${esc(t('Taille de position (risque {risk} / distance SL {dist}) :', { risk: fmtNum(tp.risqueMonetaire), dist: fmtNum(tp.distanceStop) }))}
         <b>${fmtSize(tp.unites)}</b></p>`;
     } else {
       const s = APP.settings || {};
@@ -111,7 +111,7 @@ window.AnalyzeMgr = {
         const dist = Math.abs(Number(r.entree) - Number(r.stopLoss));
         if (dist > 0) {
           const units = riskAmt / dist;
-          sizing = `<p class="size-note">💰 Taille suggérée (risque ${pct}% = ${riskAmt.toFixed(2)} / distance SL ${fmtNum(dist)}) :
+          sizing = `<p class="size-note">💰 ${esc(t('Taille suggérée (risque {pct}% = {amt} / distance SL {dist}) :', { pct, amt: riskAmt.toFixed(2), dist: fmtNum(dist) }))}
             <b>${fmtSize(units)}</b></p>`;
         }
       }
@@ -119,9 +119,9 @@ window.AnalyzeMgr = {
 
     const chips = (r.figuresDetectees || []).map(f => `<span class="chip">${esc(f)}</span>`).join('');
     const indicators = (r.indicateurs || []).length ? `
-      <div class="md-sec"><h3>Indicateurs lus sur le chart</h3>
+      <div class="md-sec"><h3>${esc(t('Indicateurs lus sur le chart'))}</h3>
         <div class="table-wrap"><table class="table">
-          <thead><tr><th>Indicateur</th><th>Lecture</th><th>Implication</th></tr></thead>
+          <thead><tr><th>${esc(t('Indicateur'))}</th><th>${esc(t('Lecture'))}</th><th>${esc(t('Implication'))}</th></tr></thead>
           <tbody>${r.indicateurs.map(i => `
             <tr>
               <td><b>${esc(i.nom)}</b></td><td>${esc(i.lecture)}</td>
@@ -130,11 +130,11 @@ window.AnalyzeMgr = {
           </tbody></table></div></div>` : '';
     const levelsMini = r.niveauxCles && (r.niveauxCles.supports || r.niveauxCles.resistances) ? `
       <div class="levels-mini">
-        <span class="supp">Supports : <b>${(r.niveauxCles.supports || []).map(fmtNum).join(' · ') || '—'}</b></span>
-        <span class="res">Résistances : <b>${(r.niveauxCles.resistances || []).map(fmtNum).join(' · ') || '—'}</b></span>
+        <span class="supp">${esc(t('Supports :'))} <b>${(r.niveauxCles.supports || []).map(fmtNum).join(' · ') || '—'}</b></span>
+        <span class="res">${esc(t('Résistances :'))} <b>${(r.niveauxCles.resistances || []).map(fmtNum).join(' · ') || '—'}</b></span>
       </div>` : '';
     const warns = (r.avertissements || []).length ? `
-      <div class="warn-box">⚠️ Avertissements<ul>${r.avertissements.map(w => `<li>${esc(w)}</li>`).join('')}</ul></div>` : '';
+      <div class="warn-box">⚠️ ${esc(t('Avertissements'))}<ul>${r.avertissements.map(w => `<li>${esc(w)}</li>`).join('')}</ul></div>` : '';
     const evProches = (r.evenementsProches || []).length ? `
       <div class="chips-line">${r.evenementsProches.map(e => `<span class="chip imp">📅 ${esc(e)}</span>`).join('')}</div>` : '';
 
@@ -144,57 +144,57 @@ window.AnalyzeMgr = {
     const consensus = entry.consensus;
     if (comps.length || consensus) {
       const cell = (c) => {
-        if (!c || c.error) return `<div class="bt-cell"><div class="k">❌ ${esc((c && c.name) || 'IA')}</div><div class="v" style="font-size:12px;color:var(--red)">${esc((c && c.error) || 'échec')}</div></div>`;
+        if (!c || c.error) return `<div class="bt-cell"><div class="k">❌ ${esc((c && c.name) || 'IA')}</div><div class="v" style="font-size:12px;color:var(--red)">${esc((c && c.error) || t('échec'))}</div></div>`;
         const q = c.result || {};
         const b = String(q.biais || '').toUpperCase();
         const bCls = b.includes('ACHAT') ? 'pos' : b.includes('VENTE') ? 'neg' : '';
         return `<div class="bt-cell">
           <div class="k">${esc(c.name)} <span class="muted" style="text-transform:none">(${esc(c.model || '')})</span></div>
-          <div class="v ${bCls}">${b.includes('ACHAT') ? '▲ ACHAT' : b.includes('VENTE') ? '▼ VENTE' : '● NEUTRE'}${Number.isFinite(Number(q.confiance)) && q.confiance !== null ? ' · ' + Number(q.confiance) + '%' : ''}</div>
-          <div class="muted" style="font-size:11.5px">E : ${fmtNum(q.entree)} · SL : ${fmtNum(q.stopLoss)} · TP1 : ${q.takeProfits && q.takeProfits[0] ? fmtNum(q.takeProfits[0].niveau) : '—'} · R:R : ${fmtNum(q.ratioRisqueRendement)}</div>
+          <div class="v ${bCls}">${b.includes('ACHAT') ? '▲ ' + t('ACHAT') : b.includes('VENTE') ? '▼ ' + t('VENTE') : '● ' + t('NEUTRE')}${Number.isFinite(Number(q.confiance)) && q.confiance !== null ? ' · ' + Number(q.confiance) + '%' : ''}</div>
+          <div class="muted" style="font-size:11.5px">${esc(t('E :'))} ${fmtNum(q.entree)} · SL : ${fmtNum(q.stopLoss)} · TP1 : ${q.takeProfits && q.takeProfits[0] ? fmtNum(q.takeProfits[0].niveau) : '—'} · R:R : ${fmtNum(q.ratioRisqueRendement)}</div>
         </div>`;
       };
       const consensusHtml = consensus ? `
         <div class="bt-verdict ${consensus.biais === 'DÉSACCORD' ? 'stop-lim' : consensus.biais === 'ACHAT' ? 'warn-lim' : 'warn-lim'}" style="margin:10px 0">
           ${consensus.biais === 'DÉSACCORD'
-            ? `⚖️ DÉSACCORD entre les IA (${consensus.votes.ACHAT} achat / ${consensus.votes.VENTE} vente / ${consensus.votes.NEUTRE} neutre)`
-            : `🤝 CONSENSUS ${consensus.biais} (${consensus.n} IA — votes : ${consensus.votes.ACHAT} achat / ${consensus.votes.VENTE} vente / ${consensus.votes.NEUTRE} neutre)`}
-          ${consensus.confianceMoyenne != null ? ` · confiance moyenne ${consensus.confianceMoyenne}%` : ''}
-          ${consensus.entreeMediane != null ? ` · entrée médiane ${fmtNum(consensus.entreeMediane)}` : ''}
-          ${consensus.stopLossMedian != null ? ` · SL médian ${fmtNum(consensus.stopLossMedian)}` : ''}
-          ${consensus.tp1Median != null ? ` · TP1 médian ${fmtNum(consensus.tp1Median)}` : ''}
-          ${consensus.rrMoyen != null ? ` · R:R moyen ${fmtNum(consensus.rrMoyen)}` : ''}
+            ? esc(t('⚖️ DÉSACCORD entre les IA ({a} achat / {v} vente / {n} neutre)', { a: consensus.votes.ACHAT, v: consensus.votes.VENTE, n: consensus.votes.NEUTRE }))
+            : esc(t('🤝 CONSENSUS {bias} ({count} IA — votes : {a} achat / {v} vente / {n} neutre)', { bias: biasLabel(consensus.biais), count: consensus.n, a: consensus.votes.ACHAT, v: consensus.votes.VENTE, n: consensus.votes.NEUTRE }))}
+          ${consensus.confianceMoyenne != null ? ' · ' + esc(t('confiance moyenne {v}%', { v: consensus.confianceMoyenne })) : ''}
+          ${consensus.entreeMediane != null ? ' · ' + esc(t('entrée médiane {v}', { v: fmtNum(consensus.entreeMediane) })) : ''}
+          ${consensus.stopLossMedian != null ? ' · ' + esc(t('SL médian {v}', { v: fmtNum(consensus.stopLossMedian) })) : ''}
+          ${consensus.tp1Median != null ? ' · ' + esc(t('TP1 médian {v}', { v: fmtNum(consensus.tp1Median) })) : ''}
+          ${consensus.rrMoyen != null ? ' · ' + esc(t('R:R moyen {v}', { v: fmtNum(consensus.rrMoyen) })) : ''}
         </div>` : '';
       comparisonHtml = `
-        <div class="md-sec"><h3>⚖️ Comparaison des IA</h3>
+        <div class="md-sec"><h3>⚖️ ${esc(t('Comparaison des IA'))}</h3>
           ${consensusHtml}
           <div class="bt-modal-grid">${comps.map(cell).join('')}</div>
         </div>`;
     }
-    const dateTxt = entry.date ? new Date(entry.date).toLocaleString('fr-FR') : '';
-    const imgsTxt = (entry.images || []).length ? `<span class="muted" style="margin-left:auto">${entry.images.length} capture(s) · ${esc(entry.model || '')} · ${dateTxt}</span>` : '';
+    const dateTxt = entry.date ? new Date(entry.date).toLocaleString(LOCALE) : '';
+    const imgsTxt = (entry.images || []).length ? `<span class="muted" style="margin-left:auto">${esc(t('{n} capture(s)', { n: entry.images.length }))} · ${esc(entry.model || '')} · ${dateTxt}</span>` : '';
 
     body.innerHTML = `
-      ${entry.truncated ? `<div class="warn-box">✂️ Réponse de l’IA tronquée par la limite de longueur : les niveaux sont fiables, le texte d’analyse peut être incomplet. Relancez pour obtenir l’analyse complète.</div>` : ''}
+      ${entry.truncated ? `<div class="warn-box">✂️ ${esc(t('Réponse de l’IA tronquée par la limite de longueur : les niveaux sont fiables, le texte d’analyse peut être incomplet. Relancez pour obtenir l’analyse complète.'))}</div>` : ''}
       ${(entry.macroEvents || []).some(ev => ev.minutesUntil <= 180) ? (entry.macroEvents || []).filter(ev => ev.minutesUntil <= 180).map(ev =>
-        `<div class="mb-item red" style="margin-bottom:8px">⛔ FENÊTRE À ÉVITER — ${esc(ev.title)} (${esc(ev.country)}) dans ${ev.minutesUntil >= 60 ? Math.floor(ev.minutesUntil / 60) + ' h ' + String(ev.minutesUntil % 60).padStart(2, '0') : ev.minutesUntil + ' min'}</div>`
+        `<div class="mb-item red" style="margin-bottom:8px">⛔ ${esc(t('FENÊTRE À ÉVITER'))} — ${esc(ev.title)} (${esc(ev.country)}) ${esc(ev.minutesUntil >= 60 ? t('dans {h} h {m}', { h: Math.floor(ev.minutesUntil / 60), m: String(ev.minutesUntil % 60).padStart(2, '0') }) : t('dans {m} min', { m: ev.minutesUntil }))}</div>`
       ).join('') : ''}
       <div class="signal-head">
-        <span class="badge ${cls}">${bias === 'ACHAT' ? '▲ ACHAT' : bias === 'VENTE' ? '▼ VENTE' : '● NEUTRE'}</span>
+        <span class="badge ${cls}">${bias === 'ACHAT' ? '▲ ' + t('ACHAT') : bias === 'VENTE' ? '▼ ' + t('VENTE') : '● ' + t('NEUTRE')}</span>
         <div class="confidence">
           <div class="pct">${Number(r.confiance) || 0}%</div>
-          <div class="lbl">CONFIANCE</div>
+          <div class="lbl">${esc(t('CONFIANCE'))}</div>
         </div>
         <div class="sig-meta">
           <b>${esc(r.actif || entry.params?.asset || '—')}</b>
           ${r.uniteDeTemps ? `· ${esc(r.uniteDeTemps)}` : ''}
-          ${r.prixActuel != null ? `· prix ≈ <b>${fmtNum(r.prixActuel)}</b>` : ''}
+          ${r.prixActuel != null ? `· ${esc(t('prix ≈'))} <b>${fmtNum(r.prixActuel)}</b>` : ''}
         </div>
         ${imgsTxt}
       </div>
 
       <div class="levels-grid">
-        <div class="level entry"><div class="k">Entrée</div><div class="v">${fmtNum(r.entree)}</div></div>
+        <div class="level entry"><div class="k">${esc(t('Entrée'))}</div><div class="v">${fmtNum(r.entree)}</div></div>
         <div class="level sl"><div class="k">Stop Loss</div><div class="v">${fmtNum(r.stopLoss)}</div></div>
         ${tpCells || '<div class="level tp"><div class="k">TP</div><div class="v">—</div></div>'}
       </div>
@@ -203,13 +203,13 @@ window.AnalyzeMgr = {
       ${evProches}
       ${levelsMini}
       ${indicators}
-      <div class="md-sec"><h3>📐 Analyse technique</h3><div class="md">${mdToHtml(r.analyseTechnique || '')}</div></div>
-      <div class="md-sec"><h3>🌍 Analyse fondamentale</h3><div class="md">${mdToHtml(r.analyseFondamentale || '')}</div></div>
-      ${r.invalidation ? `<div class="md-sec"><h3>🚫 Invalidation du scénario</h3><div class="md">${mdToHtml(r.invalidation)}</div></div>` : ''}
-      ${r.gestion ? `<div class="md-sec"><h3>🎛️ Gestion de position</h3><div class="md">${mdToHtml(r.gestion)}</div></div>` : ''}
+      <div class="md-sec"><h3>📐 ${esc(t('Analyse technique'))}</h3><div class="md">${mdToHtml(r.analyseTechnique || '')}</div></div>
+      <div class="md-sec"><h3>🌍 ${esc(t('Analyse fondamentale'))}</h3><div class="md">${mdToHtml(r.analyseFondamentale || '')}</div></div>
+      ${r.invalidation ? `<div class="md-sec"><h3>🚫 ${esc(t('Invalidation du scénario'))}</h3><div class="md">${mdToHtml(r.invalidation)}</div></div>` : ''}
+      ${r.gestion ? `<div class="md-sec"><h3>🎛️ ${esc(t('Gestion de position'))}</h3><div class="md">${mdToHtml(r.gestion)}</div></div>` : ''}
       ${warns}
       ${comparisonHtml}
-      ${entry.id ? `<div class="btn-row" style="margin-top:14px"><button class="btn" id="btn-journal">📓 Journaliser ce plan</button><button class="btn" id="btn-notrade">🚫 Non tradé</button><button class="btn" id="btn-copyplan">📋 Copier le plan</button></div>` : ''}
+      ${entry.id ? `<div class="btn-row" style="margin-top:14px"><button class="btn" id="btn-journal">📓 ${esc(t('Journaliser ce plan'))}</button><button class="btn" id="btn-notrade">🚫 ${esc(t('Non tradé'))}</button><button class="btn" id="btn-copyplan">📋 ${esc(t('Copier le plan'))}</button></div>` : ''}
     `;
   },
 
@@ -219,9 +219,9 @@ window.AnalyzeMgr = {
       APP.analyses = await api('/api/analyses');
     } catch { return; }
     const list = $('#history-list');
-    $('#history-count').textContent = APP.analyses.length ? `${APP.analyses.length} analyse(s)` : '';
+    $('#history-count').textContent = APP.analyses.length ? t('{n} analyse(s)', { n: APP.analyses.length }) : '';
     if (!APP.analyses.length) {
-      list.innerHTML = '<p class="muted">Aucune analyse enregistrée.</p>';
+      list.innerHTML = `<p class="muted">${esc(t('Aucune analyse enregistrée.'))}</p>`;
       return;
     }
     list.innerHTML = APP.analyses.map(a => {
@@ -234,11 +234,11 @@ window.AnalyzeMgr = {
           <div class="hist-main">
             <div class="hist-sym">${esc((a.result && a.result.actif) || a.params?.asset || '—')}
               ${a.params?.timeframe ? `<span class="muted">· ${esc(a.params.timeframe)}</span>` : ''}</div>
-            <div class="hist-date">${new Date(a.date).toLocaleString('fr-FR')}</div>
+            <div class="hist-date">${new Date(a.date).toLocaleString(LOCALE)}</div>
           </div>
-          <span class="hist-bias ${biasCls}">${a.result ? biasCls : 'ÉCHEC'}</span>
-          <button class="hist-del" data-jour="${esc(a.id)}" title="Journaliser ce plan">📓</button>
-          <button class="hist-del" data-del="${esc(a.id)}" title="Supprimer">🗑️</button>
+          <span class="hist-bias ${biasCls}">${a.result ? esc(biasLabel(biasCls)) : esc(t('ÉCHEC'))}</span>
+          <button class="hist-del" data-jour="${esc(a.id)}" title="${esc(t('Journaliser ce plan'))}">📓</button>
+          <button class="hist-del" data-del="${esc(a.id)}" title="${esc(t('Supprimer'))}">🗑️</button>
         </div>`;
     }).join('');
   }
@@ -276,7 +276,7 @@ $('#history-list').addEventListener('click', async e => {
   }
   if (del) {
     e.stopPropagation();
-    if (!confirm('Supprimer cette analyse ?')) return;
+    if (!confirm(t('Supprimer cette analyse ?'))) return;
     try {
       await api(`/api/analyses/${del}`, { method: 'DELETE' });
       await AnalyzeMgr.refreshHistory();
@@ -294,13 +294,36 @@ $('#history-list').addEventListener('click', async e => {
 });
 
 /* ---------- Démo ---------- */
+const DEMO_RESULT_EN = {
+  actif: 'XAUUSD', uniteDeTemps: 'H4', biais: 'ACHAT', confiance: 72, prixActuel: 2738.5,
+  entree: 2732, zoneEntree: { min: 2728, max: 2736 }, stopLoss: 2712,
+  takeProfits: [
+    { niveau: 2755, commentaire: 'Intraday resistance + 1.2R extension' },
+    { niveau: 2778, commentaire: 'Previous high' },
+    { niveau: 2805, commentaire: '1.618 Fibonacci extension target' }
+  ],
+  ratioRisqueRendement: 1.15,
+  figuresDetectees: ['Falling wedge breakout', 'Bullish pin bar on support', 'Bullish MACD divergence'],
+  indicateurs: [
+    { nom: 'RSI(14)', lecture: 'Leaving oversold territory (38 → 47)', implication: 'bullish' },
+    { nom: 'EMA 200', lecture: 'Price above, rising slope', implication: 'bullish' },
+    { nom: 'Volume', lecture: 'Expanding on the breakout', implication: 'bullish' }
+  ],
+  niveauxCles: { supports: [2712, 2688], resistances: [2755, 2778] },
+  analyseTechnique: '**Trend**: bullish on H4 and D1 (higher highs and higher lows).\n\nPrice broke the upper bound of a **falling wedge** after a divergence, then made a successful **retest** of the 2728-2736 zone (former resistance turned support).\n\n- Bullish pin bar on horizontal support\n- EMA 200 pointing up, price above it\n- Volume expanding on the breakout\n\nPreferred scenario: **bullish continuation** towards 2755 then 2778 as long as 2712 holds.',
+  analyseFondamentale: 'Macro context: wait-and-see ahead of the **US CPI** release and Fed speakers, a backdrop that has historically favoured gold with real yields trending lower.\n\nRecent news (FinancialJuice) shows mixed headlines on the dollar, which supports the scenario. **Caution**: a hot inflation surprise could trigger a sharp reversal before price gets above 2760.',
+  invalidation: 'An H4 close below 2712 invalidates the bullish structure — exit immediately, potential reversal towards 2688.',
+  gestion: 'Take 50% of the position at TP1 (2755), move the stop to break-even, then trail it under H4 swing lows to target TP3.',
+  avertissements: ['Demo example — levels are fictitious and for illustration only.', 'Always check levels on your trading platform before placing any order.']
+};
+
 $('#btn-demo').addEventListener('click', () => {
   AnalyzeMgr.showResult({
     date: new Date().toISOString(),
-    model: 'démo',
+    model: t('démo'),
     images: [],
     params: { asset: 'XAUUSD', timeframe: 'H4' },
-    result: {
+    result: LANG === 'en' ? DEMO_RESULT_EN : {
       actif: 'XAUUSD', uniteDeTemps: 'H4', biais: 'ACHAT', confiance: 72, prixActuel: 2738.5,
       entree: 2732, zoneEntree: { min: 2728, max: 2736 }, stopLoss: 2712,
       takeProfits: [
@@ -340,17 +363,17 @@ async function journalizeAnalysis(analysisId) {
     const autoNoRevenge = !limits || limits.consecutiveLosses < limits.limits.maxLossesConsecutive;
 
     const items = [
-      { id: 'ck-sl', label: 'Mon SL est défini et placé <b>AVANT</b> d’entrer', checked: false, hint: 'À cocher manuellement' },
-      { id: 'ck-rr', label: 'Mon R:R est ≥ 1 (ou justification si < 1)', checked: false, hint: 'À cocher manuellement — vérifiez le R:R affiché sur le plan' },
-      { id: 'ck-news', label: 'Aucune news à fort impact dans les 3 h', checked: autoNoNews, hint: autoNoNews ? 'Auto-coché : aucun événement High < 3 h' : '⚠️ Événement High imminent — voyez le bandeau rouge' },
-      { id: 'ck-size', label: 'Ma taille de position respecte mon risque max', checked: autoSize, hint: autoSize ? `Auto-coché : calcul serveur OK (solde ${APP.settings.balance}, risque ${APP.settings.riskPercent}%)` : 'Solde/risque non configurés dans Réglages' },
-      { id: 'ck-revenge', label: 'Je ne suis pas en revenge trading', checked: autoNoRevenge, hint: autoNoRevenge ? 'Auto-coché : moins de 2 pertes consécutives' : `⚠️ ${limits.consecutiveLosses} pertes consécutives — pause recommandée` }
+      { id: 'ck-sl', label: t('Mon SL est défini et placé <b>AVANT</b> d’entrer'), checked: false, hint: esc(t('À cocher manuellement')) },
+      { id: 'ck-rr', label: esc(t('Mon R:R est ≥ 1 (ou justification si < 1)')), checked: false, hint: esc(t('À cocher manuellement — vérifiez le R:R affiché sur le plan')) },
+      { id: 'ck-news', label: esc(t('Aucune news à fort impact dans les 3 h')), checked: autoNoNews, hint: esc(autoNoNews ? t('Auto-coché : aucun événement High < 3 h') : t('⚠️ Événement High imminent — voyez le bandeau rouge')) },
+      { id: 'ck-size', label: esc(t('Ma taille de position respecte mon risque max')), checked: autoSize, hint: esc(autoSize ? t('Auto-coché : calcul serveur OK (solde {bal}, risque {pct}%)', { bal: APP.settings.balance, pct: APP.settings.riskPercent }) : t('Solde/risque non configurés dans Réglages')) },
+      { id: 'ck-revenge', label: esc(t('Je ne suis pas en revenge trading')), checked: autoNoRevenge, hint: esc(autoNoRevenge ? t('Auto-coché : moins de {n} pertes consécutives', { n: limits ? limits.limits.maxLossesConsecutive : 2 }) : t('⚠️ {n} pertes consécutives — pause recommandée', { n: limits.consecutiveLosses })) }
     ];
 
     const overlay = $('#modal-overlay'), box = $('#modal-box');
     box.innerHTML = `
-      <h3>✅ Checklist pré-trade</h3>
-      <div class="modal-sub">Validation obligatoire avant de journaliser ce plan. Les règles non respectées bloquent la validation.</div>
+      <h3>✅ ${esc(t('Checklist pré-trade'))}</h3>
+      <div class="modal-sub">${esc(t('Validation obligatoire avant de journaliser ce plan. Les règles non respectées bloquent la validation.'))}</div>
       ${items.map(it => `
         <label class="checklist-item">
           <input type="checkbox" data-ck="${it.id}" ${it.checked ? 'checked' : ''}>
@@ -358,8 +381,8 @@ async function journalizeAnalysis(analysisId) {
         </label>`).join('')}
       <div class="checklist-error" id="ck-error"></div>
       <div class="btn-row">
-        <button class="btn btn-ghost" id="ck-cancel">Annuler</button>
-        <button class="btn btn-primary" id="ck-validate">Valider et journaliser</button>
+        <button class="btn btn-ghost" id="ck-cancel">${esc(t('Annuler'))}</button>
+        <button class="btn btn-primary" id="ck-validate">${esc(t('Valider et journaliser'))}</button>
       </div>`;
     overlay.hidden = false;
 
@@ -367,7 +390,7 @@ async function journalizeAnalysis(analysisId) {
       const all = box.querySelectorAll('input[data-ck]');
       const ok = [...all].every(i => i.checked);
       $('#ck-validate').disabled = !ok;
-      $('#ck-error').textContent = ok ? '' : '🛑 Règle de discipline non respectée — toutes les cases doivent être cochées.';
+      $('#ck-error').textContent = ok ? '' : t('🛑 Règle de discipline non respectée — toutes les cases doivent être cochées.');
     };
     box.querySelectorAll('input[data-ck]').forEach(i => i.addEventListener('change', update));
     update();
@@ -380,7 +403,7 @@ async function journalizeAnalysis(analysisId) {
       try {
         const t = await api('/api/trades', { method: 'POST', body: JSON.stringify({ analysisId }) });
         await api(`/api/trades/${t.id}`, { method: 'PUT', body: JSON.stringify({ checklistValidated: true }) });
-        toast('Plan journalisé avec checklist validée ✓ (onglet 📓)', 'ok');
+        toast(t('Plan journalisé avec checklist validée ✓ (onglet 📓)'), 'ok');
       } catch (err) { toast(err.message, 'err'); }
     });
   } catch (err) { toast(err.message, 'err'); }
@@ -396,13 +419,13 @@ $('#result-body').addEventListener('click', async e => {
   if (e.target.closest('#btn-notrade')) {
     const id = APP.currentAnalysis && APP.currentAnalysis.id;
     if (!id) return;
-    const choix = prompt('Raison du non-trade ?\n1 = fenêtre macro\n2 = pas de fill\n3 = changement de plan\n4 = autre', '1');
+    const choix = prompt(t('Raison du non-trade ?\n1 = fenêtre macro\n2 = pas de fill\n3 = changement de plan\n4 = autre'), '1');
     const raisons = { 1: 'fenêtre macro', 2: 'pas de fill', 3: 'changement de plan', 4: 'autre' };
     const raison = raisons[choix] || 'autre';
     try {
       const t = await api('/api/trades', { method: 'POST', body: JSON.stringify({ analysisId: id }) });
       await api(`/api/trades/${t.id}`, { method: 'PUT', body: JSON.stringify({ statut: 'annulé', raisonNonTrade: raison }) });
-      toast(`Trade marqué non tradé (${raison}) ✓`, 'ok');
+      toast(t('Trade marqué non tradé ({reason}) ✓', { reason: t(raison) }), 'ok');
     } catch (err) { toast(err.message, 'err'); }
   }
   if (e.target.closest('#btn-copyplan')) {
@@ -413,41 +436,41 @@ $('#result-body').addEventListener('click', async e => {
 /* ---------- Copie du plan en Markdown ---------- */
 async function copyPlanMarkdown(entry) {
   const r = entry && entry.result;
-  if (!r) { toast('Aucun plan à copier.', 'err'); return; }
-  const n = v => v == null ? '—' : String(v).replace('.', ',');
+  if (!r) { toast(t('Aucun plan à copier.'), 'err'); return; }
+  const n = v => v == null ? '—' : (LANG === 'fr' ? String(v).replace('.', ',') : String(v));
   const bias = String(r.biais || 'NEUTRE').toUpperCase();
   const L = [];
-  L.push(`# Plan de trade — ${r.actif || entry.params?.asset || '—'} ${r.uniteDeTemps ? '(' + r.uniteDeTemps + ')' : ''}`);
+  L.push(`# ${t('Plan de trade')} — ${r.actif || entry.params?.asset || '—'} ${r.uniteDeTemps ? '(' + r.uniteDeTemps + ')' : ''}`);
   L.push('');
-  L.push(`- **Biais** : ${bias === 'ACHAT' ? '▲ ACHAT' : bias === 'VENTE' ? '▼ VENTE' : '● NEUTRE'} — confiance ${r.confiance != null ? r.confiance + ' %' : '—'}`);
-  L.push(`- **Entrée** : ${n(r.entree)}${r.zoneEntree && (r.zoneEntree.min != null || r.zoneEntree.max != null) ? ` (zone ${n(r.zoneEntree.min)} – ${n(r.zoneEntree.max)})` : ''}`);
+  L.push(`- **${t('Biais')}** : ${bias.includes('ACHAT') ? '▲ ' + t('ACHAT') : bias.includes('VENTE') ? '▼ ' + t('VENTE') : '● ' + t('NEUTRE')} — ${t('confiance')} ${r.confiance != null ? r.confiance + ' %' : '—'}`);
+  L.push(`- **${t('Entrée')}** : ${n(r.entree)}${r.zoneEntree && (r.zoneEntree.min != null || r.zoneEntree.max != null) ? ` (${t('zone')} ${n(r.zoneEntree.min)} – ${n(r.zoneEntree.max)})` : ''}`);
   L.push(`- **Stop Loss** : ${n(r.stopLoss)}`);
   (r.takeProfits || []).forEach((tp, i) => L.push(`- **TP${i + 1}** : ${n(tp && tp.niveau)}${tp && tp.commentaire ? ' — ' + tp.commentaire : ''}`));
   L.push(`- **R:R (TP1)** : ${n(r.ratioRisqueRendement)}`);
   if (Array.isArray(entry.ratiosParTP) && entry.ratiosParTP.length) {
-    L.push(`- **R:R par TP** : ${entry.ratiosParTP.map(x => `TP${x.tp} = ${x.rr}R`).join(' · ')}`);
+    L.push(`- **${t('R:R par TP')}** : ${entry.ratiosParTP.map(x => `TP${x.tp} = ${x.rr}R`).join(' · ')}`);
   }
   if (r.taillePosition) {
     const tp = r.taillePosition;
-    L.push(`- **Taille de position** : risque ${n(tp.risqueMonetaire)} / distance SL ${n(tp.distanceStop)} → ${n(tp.unites)} unités`);
+    L.push(`- **${t('Taille de position')}** : ${t('risque')} ${n(tp.risqueMonetaire)} / ${t('distance SL')} ${n(tp.distanceStop)} → ${t('{units} unités', { units: n(tp.unites) })}`);
   }
   if (r.niveauxCles) {
-    if ((r.niveauxCles.supports || []).length) L.push(`- **Supports** : ${r.niveauxCles.supports.map(n).join(' · ')}`);
-    if ((r.niveauxCles.resistances || []).length) L.push(`- **Résistances** : ${r.niveauxCles.resistances.map(n).join(' · ')}`);
+    if ((r.niveauxCles.supports || []).length) L.push(`- **${t('Supports')}** : ${r.niveauxCles.supports.map(n).join(' · ')}`);
+    if ((r.niveauxCles.resistances || []).length) L.push(`- **${t('Résistances')}** : ${r.niveauxCles.resistances.map(n).join(' · ')}`);
   }
-  if (r.invalidation) { L.push(''); L.push(`## 🚫 Invalidation`); L.push(r.invalidation); }
-  if (r.gestion) { L.push(''); L.push(`## 🎛️ Gestion`); L.push(r.gestion); }
-  if ((r.avertissements || []).length) { L.push(''); L.push(`## ⚠️ Avertissements`); r.avertissements.forEach(a => L.push(`- ${a}`)); }
-  if ((r.evenementsProches || []).length) { L.push(''); L.push(`## 📅 Événements macro proches`); r.evenementsProches.forEach(e2 => L.push(`- ${e2}`)); }
+  if (r.invalidation) { L.push(''); L.push(`## 🚫 ${t('Invalidation')}`); L.push(r.invalidation); }
+  if (r.gestion) { L.push(''); L.push(`## 🎛️ ${t('Gestion')}`); L.push(r.gestion); }
+  if ((r.avertissements || []).length) { L.push(''); L.push(`## ⚠️ ${t('Avertissements')}`); r.avertissements.forEach(a => L.push(`- ${a}`)); }
+  if ((r.evenementsProches || []).length) { L.push(''); L.push(`## 📅 ${t('Événements macro proches')}`); r.evenementsProches.forEach(e2 => L.push(`- ${e2}`)); }
   const md = L.join('\n');
   try {
     await navigator.clipboard.writeText(md);
-    toast('Plan copié ✓', 'ok');
+    toast(t('Plan copié ✓'), 'ok');
   } catch {
     const ta = document.createElement('textarea');
     ta.value = md; document.body.appendChild(ta); ta.select();
     document.execCommand('copy'); ta.remove();
-    toast('Plan copié ✓', 'ok');
+    toast(t('Plan copié ✓'), 'ok');
   }
 }
 window.copyPlanMarkdown = copyPlanMarkdown;
@@ -468,15 +491,15 @@ const MacroBanner = {
       if (!high.length) { box.hidden = true; return; }
       const blackout = (APP.settings && Number(APP.settings.blackoutMinutes)) || 60;
       box.hidden = false;
-      box.innerHTML = '<b>📅 Événements à fort impact dans les 24 h' + (symbol ? ` (${esc(symbol)})` : '') + ' :</b>' + high.map(ev => {
+      box.innerHTML = '<b>📅 ' + esc(t('Événements à fort impact dans les 24 h')) + (symbol ? ` (${esc(symbol)})` : '') + ' :</b>' + high.map(ev => {
         const mins = ev.minutesUntil;
         const cls = mins <= blackout ? 'red' : mins <= 180 ? 'orange' : '';
         const inTxt = mins >= 60
-          ? `dans ${Math.floor(mins / 60)} h ${String(mins % 60).padStart(2, '0')}`
-          : `dans ${mins} min`;
+          ? t('dans {h} h {m}', { h: Math.floor(mins / 60), m: String(mins % 60).padStart(2, '0') })
+          : t('dans {m} min', { m: mins });
         // Windows n'affiche pas les emojis drapeaux (ils rendent en lettres) :
         // on privilégie le code devise, toujours lisible
-        return `<span class="mb-item ${cls}"><b>${esc(ev.country)}</b> — ${esc(ev.title)} · ${inTxt}${cls === 'red' ? ' ⛔ FENÊTRE À ÉVITER' : ''}</span>`;
+        return `<span class="mb-item ${cls}"><b>${esc(ev.country)}</b> — ${esc(ev.title)} · ${esc(inTxt)}${cls === 'red' ? ' ⛔ ' + esc(t('FENÊTRE À ÉVITER')) : ''}</span>`;
       }).join('');
     } catch { box.hidden = true; }
   }
@@ -496,17 +519,17 @@ const LimitsBanner = {
       const rows = [];
       const dLim = l.limits.maxTradesPerDay, wLim = l.limits.maxTradesPerWeek, lossLim = l.limits.maxLossesConsecutive;
       if (l.consecutiveLosses >= lossLim) {
-        rows.push(`<div class="blink-lim">🚨 ${l.consecutiveLosses} pertes consécutives — pause de 2 h recommandée</div>`);
+        rows.push(`<div class="blink-lim">🚨 ${esc(t('{n} pertes consécutives — pause de 2 h recommandée', { n: l.consecutiveLosses }))}</div>`);
       }
       if (l.tradesToday >= dLim) {
-        rows.push(`<div class="stop-lim">🛑 Limite journalière atteinte (${l.tradesToday}/${dLim} trades)</div>`);
+        rows.push(`<div class="stop-lim">🛑 ${esc(t('Limite journalière atteinte ({n}/{max} trades)', { n: l.tradesToday, max: dLim }))}</div>`);
       } else if (l.tradesToday >= dLim - 1) {
-        rows.push(`<div class="warn-lim">⚠️ ${l.tradesToday}/${dLim} trades aujourd'hui</div>`);
+        rows.push(`<div class="warn-lim">⚠️ ${esc(t('{n}/{max} trades aujourd’hui', { n: l.tradesToday, max: dLim }))}</div>`);
       }
       if (l.tradesThisWeek >= wLim) {
-        rows.push(`<div class="stop-lim">🛑 Limite hebdomadaire atteinte (${l.tradesThisWeek}/${wLim} trades)</div>`);
+        rows.push(`<div class="stop-lim">🛑 ${esc(t('Limite hebdomadaire atteinte ({n}/{max} trades)', { n: l.tradesThisWeek, max: wLim }))}</div>`);
       } else if (l.tradesThisWeek >= wLim - 2) {
-        rows.push(`<div class="warn-lim">⚠️ ${l.tradesThisWeek}/${wLim} trades cette semaine</div>`);
+        rows.push(`<div class="warn-lim">⚠️ ${esc(t('{n}/{max} trades cette semaine', { n: l.tradesThisWeek, max: wLim }))}</div>`);
       }
       if (rows.length) { box.innerHTML = rows.join(''); box.hidden = false; }
       else box.hidden = true;

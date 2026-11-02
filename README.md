@@ -3,116 +3,121 @@
 [![CI](https://github.com/4dodi/TradeWee/actions/workflows/ci.yml/badge.svg)](https://github.com/4dodi/TradeWee/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-Webapp locale d'analyse de trading : envoyez des **captures d'écran de charts et de stratégies**, une IA vision vous renvoie une **analyse technique + fondamentale** avec un **plan de trade complet** (entrée, zone d'entrée, TP, SL, ratio risque/rendement, taille de position).
+🇬🇧 English · 🇫🇷 [Version française](README.fr.md)
 
-## Fonctionnalités
+A self-hosted trading analysis web app: upload **screenshots of your charts and strategies**, and a vision AI returns a **technical + fundamental analysis** with a **complete trade plan** (entry, entry zone, TP, SL, risk/reward ratio, position size).
 
-| Onglet | Description |
+## Features
+
+| Tab | Description |
 |---|---|
-| **📊 Analyse** | Glissez 1 à 5 captures d'écran → l'IA lit le graphique (structure, indicateurs, figures, tracés) et renvoie : biais (ACHAT/VENTE/NEUTRE), confiance %, entrée + zone, SL, TP1-TP3, R:R, figures détectées, niveaux clés, analyses technique et fondamentale détaillées, conditions d'invalidation, gestion de position et taille suggérée selon votre risque. Historique des analyses conservé. |
-| **⭐ Actifs** | Watchlist : ajouter / modifier / supprimer des actifs (forex, crypto, indices, actions, matières premières). |
-| **📅 Calendrier** | Calendrier économique de la semaine (source ForexFactory), groupé par jour, filtrable par devise et par recherche, compte à rebours avant le prochain événement à fort impact. |
-| **🔔 Alertes** | News en temps réel de **FinancialJuice** (financialjuice.com), rafraîchissement automatique, filtres par mots-clés, son + notifications bureau sur nouvelle alerte. Ces news peuvent aussi être injectées dans l'analyse IA (volet fondamental). |
-| **📓 Journal** | Plans journalisés (checklist pré-trade), statut, sortie, P&L en R et en $, winrate, espérance, performance par modèle IA. |
-| **📈 Marché** | Cotations, Fear & Greed, dominance BTC, Long/Short, tendances, surveillances de prix avec alertes. |
-| **⚙️ Réglages** | Fournisseur IA (Z.ai / OpenAI / Gemini / personnalisé), clé API, modèle, solde et % de risque, limites de discipline, intervalle d'alertes, sauvegarde ZIP. |
+| **📊 Analysis** | Drop 1 to 5 screenshots → the AI reads the chart (structure, indicators, patterns, drawings) and returns: bias (BUY/SELL/NEUTRAL), confidence %, entry + zone, SL, TP1–TP3, R:R, detected patterns, key levels, detailed technical and fundamental analysis, invalidation conditions, position management and a suggested size based on your risk. Analyses are kept in a history. Optional comparison across several AIs with a consensus. |
+| **⭐ Assets** | Watchlist: add / edit / delete assets (forex, crypto, indices, stocks, commodities). |
+| **📅 Calendar** | This week's economic calendar (source: ForexFactory), grouped by day, filterable by currency and search, with a countdown to the next high-impact event. |
+| **🔔 Alerts** | Real-time news from **FinancialJuice** (financialjuice.com), auto-refresh, keyword filters, sound + desktop notifications on new alerts. This news can also be fed into the AI analysis (fundamental part). |
+| **📓 Journal** | Logged plans (pre-trade checklist), status, exit, P&L in R and $, win rate, expectancy, performance by AI model. |
+| **📈 Market** | Quotes, Fear & Greed, BTC dominance, Long/Short, trending coins, price watches with alerts. |
+| **⚙️ Settings** | AI provider (Gemini / OpenRouter / Mistral / GitHub Models / Z.ai / OpenAI / custom), API key, model, balance and risk %, discipline limits, alert interval, ZIP backup. |
 
-## Installation & lancement
+## Install & run
 
-Prérequis : [Node.js](https://nodejs.org) ≥ 18.
+Requirements: [Node.js](https://nodejs.org) ≥ 18.
 
 ```bash
+git clone https://github.com/4dodi/TradeWee.git
+cd TradeWee
 npm install
 npm start
 ```
 
-ou sous Windows : **double-cliquez sur `start.bat`**.
+On Windows you can also **double-click `start.bat`**.
 
-L'app s'ouvre sur <http://localhost:3000>.
+The app opens at <http://localhost:3000>.
 
-## Configuration de l'IA (obligatoire pour analyser)
+## Language (EN / FR)
 
-1. Ouvrez l'onglet **⚙️ Réglages**.
-2. Choisissez un fournisseur — **plusieurs sont gratuits** (clé en 2 minutes, aucun compte bancaire) :
+The interface is available in **English** (default) and **French**. Pick the language with the 🌐 selector at the bottom of the sidebar (or open `http://localhost:3000/?lang=fr`). The choice is remembered in your browser. The AI writes its analyses in the selected language; analyses already saved stay in their original language.
 
-| Fournisseur | Modèle par défaut | Où obtenir la clé |
+## AI setup (required to analyze)
+
+1. Open the **⚙️ Settings** tab.
+2. Choose a provider — **several are free** (key in 2 minutes, no credit card):
+
+| Provider | Default model | Where to get a key |
 |---|---|---|
-| 🆓 **Google Gemini** (défaut) | `gemini-2.5-flash` | [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey) — compte Google suffit |
-| 🆓 **OpenRouter** | `google/gemma-4-31b-it:free` | [openrouter.ai/keys](https://openrouter.ai/keys) — 8 modèles gratuits lisent les images |
-| 🆓 **Mistral AI** | `mistral-small-latest` | [console.mistral.ai/api-keys](https://console.mistral.ai/api-keys) — activer le plan gratuit « Experiment » |
-| 🆓 **GitHub Models** | `openai/gpt-4o` | [github.com/settings/tokens](https://github.com/settings/tokens) — créer un PAT (permission « Models : read ») |
-| ⚠️ Groq | — | Groq **ne propose plus de modèle vision** : inutilisable pour analyser des images. |
+| 🆓 **Google Gemini** (default) | auto-detected | [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey) — a Google account is enough |
+| 🆓 **OpenRouter** | `google/gemma-4-31b-it:free` | [openrouter.ai/keys](https://openrouter.ai/keys) — several free models read images |
+| 🆓 **Mistral AI** | `mistral-small-latest` | [console.mistral.ai/api-keys](https://console.mistral.ai/api-keys) — enable the free “Experiment” plan |
+| 🆓 **GitHub Models** | `openai/gpt-4o` | [github.com/settings/tokens](https://github.com/settings/tokens) — create a PAT with “Models: read” |
+| ⚠️ Groq | — | Groq **no longer offers a vision model**: it can't analyze images. |
 | 💳 Z.ai | `glm-4.5v` | [z.ai](https://z.ai) |
 | 💳 OpenAI | `gpt-4o` | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) |
-| 💳 Personnalisé | au choix | toute API compatible OpenAI (`/chat/completions` avec images) |
+| 💳 Custom | your choice | any OpenAI-compatible API (`/chat/completions` with images) |
 
-> **Les catalogues de modèles changent souvent.** Après avoir collé votre clé, cliquez sur **« 📋 Lister »** à côté du champ Modèle : l'app interroge votre compte et propose les modèles réellement disponibles. Choisissez-en un qui accepte les **images**.
+> **Model catalogues change often.** After pasting your key, click **“📋 List”** next to the Model field: the app queries your account and suggests the models actually available. Pick one that accepts **images**.
 
-> Les offres gratuites ont des **quotas** (requêtes par minute ou par jour). En cas d'erreur **429**, patientez une minute puis réessayez.
+> Free tiers have **quotas** (requests per minute or per day). If you get a **429** error, wait a minute and try again.
 
-3. Collez votre **clé API**, cliquez sur **Tester la connexion** puis **Enregistrer**. Un lien direct « 🔑 Obtenir une clé » s'affiche dans les réglages selon le fournisseur choisi.
+3. Paste your **API key**, click **Test connection**, then **Save settings**. A “🔑 Get an API key” link for the selected provider is shown in Settings.
 
-La clé est stockée uniquement en local dans `data/config.json` (fichier exclu de Git).
+The key is stored only on your machine, in `data/config.json` (excluded from Git).
 
-## Variables d'environnement
+## Environment variables
 
-| Variable | Défaut | Rôle |
+| Variable | Default | Purpose |
 |---|---|---|
-| `PORT` | `3000` | Port d'écoute. |
-| `HOST` | `127.0.0.1` | Interface d'écoute. Par défaut l'app n'est accessible **que depuis votre PC**. Mettre `0.0.0.0` pour l'exposer (exige `APP_PASSWORD`). |
-| `APP_PASSWORD` | — | Active une authentification (identifiant `APP_USER`, `admin` par défaut). **Obligatoire** dès que `HOST` n'est pas local. |
-| `APP_USER` | `admin` | Identifiant de connexion lorsque `APP_PASSWORD` est défini. |
-| `DATA_DIR` | `./data` | Dossier des données (config, analyses, journal, captures). Utile pour un disque persistant chez un hébergeur. |
-| `ALLOW_INSECURE_TLS` | — | `1` = accepte un certificat HTTPS non vérifié (antivirus qui inspecte le HTTPS). Activé par `start.bat`, à éviter sur un serveur. |
-| `ALLOW_NO_AUTH` | — | `1` = autorise une exposition réseau sans mot de passe (déconseillé). |
+| `PORT` | `3000` | Listening port. |
+| `HOST` | `127.0.0.1` | Listening interface. By default the app is reachable **only from your own computer**. Set `0.0.0.0` to expose it (requires `APP_PASSWORD`). |
+| `APP_PASSWORD` | — | Turns on a login prompt (username `APP_USER`, `admin` by default). **Required** whenever `HOST` is not local. |
+| `APP_USER` | `admin` | Login username when `APP_PASSWORD` is set. |
+| `DATA_DIR` | `./data` | Data folder (config, analyses, journal, screenshots). Useful for a persistent disk on a host. |
+| `ALLOW_INSECURE_TLS` | — | `1` = accept an unverified HTTPS certificate (antivirus software that inspects HTTPS). Enabled by `start.bat`; avoid on a server. |
+| `ALLOW_NO_AUTH` | — | `1` = allow network exposure without a password (not recommended). |
 
-## Publier sur GitHub / déployer
+## GitHub & deployment
 
-Le dossier `data/` (votre **clé API**, vos analyses, votre journal et vos captures) est exclu par `.gitignore` : il ne sera jamais publié. Les réglages se refont dans l'onglet ⚙️ après installation.
+The `data/` folder (your **API key**, analyses, journal and screenshots) is excluded by `.gitignore`, so it is never published. Re-enter your settings in the ⚙️ tab after installing.
 
-```bash
-git init
-git add .
-git commit -m "Tradewee App"
-git branch -M main
-git remote add origin https://github.com/4dodi/TradeWee.git
-git push -u origin main
-```
+A GitHub Actions workflow (`.github/workflows/ci.yml`) runs `npm test` on every push (Node 18, 20 and 22).
 
-Un workflow GitHub Actions (`.github/workflows/ci.yml`) lance `npm test` à chaque push (Node 18, 20 et 22).
+> ⚠️ **GitHub Pages cannot host this app**: Pages only serves static files, while Tradewee needs its Node server (AI calls with your key, calendar/alerts proxy, journal storage).
 
-> ⚠️ **GitHub Pages ne peut pas héberger cette app** : Pages ne sert que des fichiers statiques, alors que Tradewee a besoin de son serveur Node (appels IA avec votre clé, proxy calendrier/alertes, stockage du journal).
+To use it online, deploy the GitHub repository to a Node.js host (Render, Railway, Fly.io, a VPS…):
 
-Pour l'utiliser en ligne, déployez le dépôt GitHub sur un hébergeur Node.js (Render, Railway, Fly.io, un VPS…) :
+- Build command: `npm ci` — start command: `npm start`
+- Variables: `HOST=0.0.0.0`, `APP_PASSWORD=<long password>` (the host usually provides `PORT`)
+- Attach a **persistent disk** and point `DATA_DIR` to it, otherwise the journal and key are lost on every restart.
+- Serve the app over **HTTPS** (provided by these hosts): the password is sent with every request.
 
-- Commande de build : `npm ci` — commande de démarrage : `npm start`
-- Variables : `HOST=0.0.0.0`, `APP_PASSWORD=<mot de passe long>` (le `PORT` est en général fourni par l'hébergeur)
-- Montez un **disque persistant** et pointez `DATA_DIR` dessus, sinon le journal et la clé sont perdus à chaque redémarrage.
-- Servez l'app en **HTTPS** (fourni par ces hébergeurs) : le mot de passe transite à chaque requête.
+## Data sources
 
-## Sources de données
+- **Economic calendar**: ForexFactory public JSON feed (`nfs.faireconomy.media`).
+- **Alerts**: FinancialJuice official RSS feed (`financialjuice.com/feed.ashx?xy=rss`).
+- **Quotes & market overview**: CoinGecko, Frankfurter (ECB rates), alternative.me, Binance futures — public endpoints, no key.
+- **Analysis**: your AI provider (server-side calls; your key only ever goes to that provider).
 
-- **Calendrier économique** : flux JSON public ForexFactory (`nfs.faireconomy.media`).
-- **Alertes** : flux RSS officiel de FinancialJuice (`financialjuice.com/feed.ashx?xy=rss`).
-- **Analyse** : votre fournisseur IA (appels serveur, votre clé ne quitte pas votre machine sauf vers ce fournisseur).
-
-## Structure
+## Project structure
 
 ```
-tradewee/
-├── server.js          # serveur Express (API, proxy calendrier/alertes, appel IA)
-├── public/            # interface (HTML/CSS/JS, aucun build nécessaire)
-│   └── js/            # analyze / assets / calendar / alerts / settings
-├── data/              # créé au 1er lancement (non versionné) : config.json, analyses.json, trades.json, uploads/
-├── test/smoke.js      # test de fumée (npm test)
-├── .github/workflows/ # intégration continue GitHub Actions
-└── start.bat          # lanceur Windows
+TradeWee/
+├── server.js          # Express server (API, calendar/alerts proxy, AI calls)
+├── i18n-server.js     # English translation of server messages
+├── public/            # interface (HTML/CSS/JS, no build step)
+│   └── js/            # i18n (EN/FR) / analyze / assets / calendar / alerts / journal / market
+├── data/              # created on first run (not versioned): config.json, analyses.json, trades.json, uploads/
+├── test/smoke.js      # smoke test (npm test)
+├── .github/workflows/ # GitHub Actions CI
+└── start.bat          # Windows launcher
 ```
 
-## ⚠️ Avertissement
+### Adding or changing interface text
 
-Outil **éducatif**. Les analyses générées par IA sont indicatives et peuvent être erronées (une IA peut mal lire un graphique). Le trading comporte un risque de perte en capital. Ne tradez jamais une somme que vous ne pouvez pas vous permettre de perdre et validez toujours les niveaux sur votre plateforme avant tout ordre.
+French is the source language. In the browser code, wrap text in `t('French text')` (use `{name}` placeholders for variables) and add the English translation to the `EN` dictionary in `public/js/i18n.js`. Static text in `index.html` is translated automatically when it matches a dictionary key. Server messages are translated in `i18n-server.js`.
 
-## Licence
+## ⚠️ Disclaimer
 
-Distribué sous licence **MIT** — voir le fichier [LICENSE](LICENSE). Vous pouvez utiliser, modifier et redistribuer ce code librement, à condition de conserver la mention de copyright. Le logiciel est fourni « tel quel », sans garantie.
+**Educational** tool. AI-generated analyses are indicative and can be wrong (an AI can misread a chart). Trading involves a risk of losing capital. Never trade money you cannot afford to lose, and always check levels on your platform before placing any order.
+
+## License
+
+Released under the **MIT** license — see [LICENSE](LICENSE). You may use, modify and redistribute this code freely, as long as you keep the copyright notice. The software is provided “as is”, without warranty.

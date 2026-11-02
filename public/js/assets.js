@@ -4,7 +4,7 @@ window.AssetsMgr = {
     const tbody = $('#assets-tbody');
     if (!tbody) return;
     if (APP.assets.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="4" class="muted" style="text-align:center;padding:24px">Aucun actif — ajoutez-en un ci-dessus.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="4" class="muted" style="text-align:center;padding:24px">${esc(t('Aucun actif — ajoutez-en un ci-dessus.'))}</td></tr>`;
     } else {
       tbody.innerHTML = APP.assets.map(a => `
         <tr>
@@ -13,8 +13,8 @@ window.AssetsMgr = {
           <td class="muted">${esc(a.notes) || '—'}</td>
           <td>
             <div class="row-actions">
-              <button data-edit="${esc(a.id)}" title="Modifier">✏️</button>
-              <button data-del="${esc(a.id)}" title="Supprimer">🗑️</button>
+              <button data-edit="${esc(a.id)}" title="${esc(t('Modifier'))}">✏️</button>
+              <button data-del="${esc(a.id)}" title="${esc(t('Supprimer'))}">🗑️</button>
             </div>
           </td>
         </tr>`).join('');
@@ -31,14 +31,14 @@ window.AssetsMgr = {
     $('#as-symbol').value = a.symbol;
     $('#as-type').value = a.type;
     $('#as-notes').value = a.notes || '';
-    $('#as-submit').textContent = '💾 Modifier';
+    $('#as-submit').textContent = t('💾 Modifier');
     $('#as-cancel').hidden = false;
   },
 
   resetForm() {
     $('#asset-form').reset();
     $('#as-id').value = '';
-    $('#as-submit').textContent = '➕ Ajouter';
+    $('#as-submit').textContent = t('➕ Ajouter');
     $('#as-cancel').hidden = true;
   }
 };
@@ -55,10 +55,10 @@ $('#asset-form').addEventListener('submit', async (e) => {
   try {
     if (id) {
       await api(`/api/assets/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
-      toast('Actif modifié ✓', 'ok');
+      toast(t('Actif modifié ✓'), 'ok');
     } else {
       await api('/api/assets', { method: 'POST', body: JSON.stringify(payload) });
-      toast('Actif ajouté ✓', 'ok');
+      toast(t('Actif ajouté ✓'), 'ok');
     }
     AssetsMgr.resetForm();
     await loadConfig();
@@ -73,10 +73,10 @@ $('#assets-tbody').addEventListener('click', async (e) => {
   if (editId) return AssetsMgr.startEdit(editId);
   if (delId) {
     const a = APP.assets.find(x => x.id === delId);
-    if (!confirm(`Supprimer l'actif ${a ? a.symbol : ''} ?`)) return;
+    if (!confirm(t('Supprimer l’actif {sym} ?', { sym: a ? a.symbol : '' }))) return;
     try {
       await api(`/api/assets/${delId}`, { method: 'DELETE' });
-      toast('Actif supprimé ✓', 'ok');
+      toast(t('Actif supprimé ✓'), 'ok');
       await loadConfig();
     } catch (err) { toast(err.message, 'err'); }
   }

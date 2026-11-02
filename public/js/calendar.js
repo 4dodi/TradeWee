@@ -46,7 +46,7 @@ window.CalendarMgr = {
 
     this.renderNextHigh();
 
-    if (!events.length) { c.innerHTML = '<p class="muted">Aucun événement pour ces filtres.</p>'; return; }
+    if (!events.length) { c.innerHTML = `<p class="muted">${esc(t('Aucun événement pour ces filtres.'))}</p>`; return; }
 
     // regroupement par jour (heure locale)
     const byDay = new Map();
@@ -61,7 +61,7 @@ window.CalendarMgr = {
 
     let html = '';
     for (const [, day] of byDay) {
-      const label = day.date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+      const label = day.date.toLocaleDateString(LOCALE, { weekday: 'long', day: 'numeric', month: 'long' });
       html += `<div class="cal-day ${`${day.date.getFullYear()}-${day.date.getMonth()}-${day.date.getDate()}` === todayKey ? 'today' : ''}">${esc(label)}</div>`;
       for (const ev of day.rows) {
         const d = new Date(ev.date);
@@ -69,12 +69,12 @@ window.CalendarMgr = {
         const impact = ['High', 'Medium', 'Low', 'Holiday'].includes(ev.impact) ? ev.impact : 'Low';
         html += `
           <div class="cal-row ${past ? 'past' : ''}">
-            <span class="cal-time">${d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
+            <span class="cal-time">${d.toLocaleTimeString(LOCALE, { hour: '2-digit', minute: '2-digit' })}</span>
             <span class="cal-ccy">${CCY_FLAGS[ev.country] || ''} ${esc(ev.country)}</span>
-            <span class="cal-impact ${impact}">${impact === 'High' ? 'ÉLEVÉ' : impact === 'Medium' ? 'MOYEN' : impact === 'Holiday' ? 'FÉRIÉ' : 'FAIBLE'}</span>
+            <span class="cal-impact ${impact}">${impact === 'High' ? t('ÉLEVÉ') : impact === 'Medium' ? t('MOYEN') : impact === 'Holiday' ? t('FÉRIÉ') : t('FAIBLE')}</span>
             <span class="cal-title">${esc(ev.title)}</span>
-            <span class="cal-fc" title="Prévision">P : ${esc(ev.forecast || '—')}</span>
-            <span class="cal-prev" title="Précédent">Prec : ${esc(ev.previous || '—')}</span>
+            <span class="cal-fc" title="${esc(t('Prévision'))}">${esc(t('P :'))} ${esc(ev.forecast || '—')}</span>
+            <span class="cal-prev" title="${esc(t('Précédent'))}">${esc(t('Prec :'))} ${esc(ev.previous || '—')}</span>
           </div>`;
       }
     }
@@ -90,9 +90,9 @@ window.CalendarMgr = {
     if (!next) { box.hidden = true; return; }
     const mins = Math.round((next.t - Date.now()) / 60000);
     const h = Math.floor(mins / 60), m = mins % 60;
-    const inTxt = h > 0 ? `dans ${h} h ${m.toString().padStart(2, '0')}` : `dans ${m} min`;
+    const inTxt = h > 0 ? t('dans {h} h {m}', { h, m: m.toString().padStart(2, '0') }) : t('dans {m} min', { m });
     box.hidden = false;
-    box.innerHTML = `🔴 <b>Prochain événement à fort impact</b> : ${CCY_FLAGS[next.country] || ''} <b>${esc(next.country)}</b> — ${esc(next.title)} · ${new Date(next.date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })} (${inTxt})`;
+    box.innerHTML = `🔴 <b>${esc(t('Prochain événement à fort impact'))}</b> : ${CCY_FLAGS[next.country] || ''} <b>${esc(next.country)}</b> — ${esc(next.title)} · ${new Date(next.date).toLocaleTimeString(LOCALE, { hour: '2-digit', minute: '2-digit' })} (${esc(inTxt)})`;
   }
 };
 

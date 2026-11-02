@@ -48,12 +48,12 @@ function toast(msg, type = '') {
 
 async function api(path, opts = {}) {
   const r = await fetch(path, {
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'X-Lang': LANG },
     ...opts
   });
   let j = null;
   try { j = await r.json(); } catch { /* réponse non JSON */ }
-  if (!r.ok) throw new Error((j && j.error) || `Erreur ${r.status}`);
+  if (!r.ok) throw new Error((j && j.error) || t('Erreur {n}', { n: r.status }));
   return j;
 }
 
@@ -61,20 +61,23 @@ function fmtNum(v) {
   if (v === null || v === undefined || v === '' || Number.isNaN(Number(v))) return '—';
   const n = Number(v);
   const dec = Math.abs(n) >= 1000 ? 2 : Math.abs(n) >= 10 ? 3 : Math.abs(n) >= 1 ? 4 : 5;
-  return n.toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: dec });
+  return n.toLocaleString(LOCALE, { minimumFractionDigits: 0, maximumFractionDigits: dec });
 }
 
 function timeAgo(iso) {
   const d = new Date(iso);
   if (isNaN(d)) return '';
   const s = Math.floor((Date.now() - d.getTime()) / 1000);
-  if (s < 60) return 'à l’instant';
-  if (s < 3600) return `il y a ${Math.floor(s / 60)} min`;
-  if (s < 86400) return `il y a ${Math.floor(s / 3600)} h`;
-  return `il y a ${Math.floor(s / 86400)} j`;
+  if (s < 60) return t('à l’instant');
+  if (s < 3600) return t('il y a {n} min', { n: Math.floor(s / 60) });
+  if (s < 86400) return t('il y a {n} h', { n: Math.floor(s / 3600) });
+  return t('il y a {n} j', { n: Math.floor(s / 86400) });
 }
 
-const TYPE_LABELS = { forex: 'Forex', crypto: 'Crypto', index: 'Indice', action: 'Action', commodity: 'Matière 1ère' };
+const TYPE_LABELS = { forex: t('Forex'), crypto: t('Crypto'), index: t('Indice'), action: t('Action'), commodity: t('Matière 1ère') };
+/* Libellés affichés des valeurs internes (stockées en français) */
+const BIAS_LABELS = { ACHAT: t('ACHAT'), VENTE: t('VENTE'), NEUTRE: t('NEUTRE') };
+const biasLabel = (b) => BIAS_LABELS[b] || b;
 const CCY_FLAGS = { USD: '🇺🇸', EUR: '🇪🇺', GBP: '🇬🇧', JPY: '🇯🇵', CHF: '🇨🇭', AUD: '🇦🇺', CAD: '🇨🇦', CNY: '🇨🇳', NZD: '🇳🇿', ALL: '🌍' };
 
 /* État global partagé */

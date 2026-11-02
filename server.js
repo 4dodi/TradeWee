@@ -1,5 +1,5 @@
 /**
- * Tradewee App — serveur local
+ * Tradewee App — serveur local (interface FR/EN)
  * Analyse de captures d'écran de charts via IA vision (API compatible OpenAI),
  * gestion d'actifs, calendrier économique (ForexFactory) et alertes (FinancialJuice RSS).
  */
@@ -7,6 +7,7 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { languageMiddleware } = require('./i18n-server');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -240,6 +241,47 @@ RÈGLES STRICTES :
   "avertissements": ["string"]
 }`;
 
+// Version anglaise du prompt : mêmes clés JSON (le code en dépend), textes en anglais.
+const SYSTEM_PROMPT_EN = `You are "Tradewee Analyst", a senior trading analyst (15 years of experience), expert in chart-based technical analysis, price action and macro fundamental analysis.
+
+ANALYSIS METHOD:
+1. Read EVERY image carefully: chart type, asset, timeframe, candles and structure, visible indicators (RSI, MACD, EMA/SMA, Volume, Bollinger, Stochastic...), drawings (supports/resistances, trend lines, patterns, supply/demand zones, Fibonacci, triangles...) and any strategy text or notes visible on the screenshot.
+2. Technical analysis: primary and intermediate trend, market structure (HH/HL or LH/LL), chart patterns and price action, indicator momentum, volume, possible divergence.
+3. Fundamental analysis: macro context for the asset (interest rates, inflation, growth, geopolitics, market sentiment, news). If recent news is provided in the context, use it explicitly.
+4. Derive a preferred scenario and a concrete, realistic and cautious trade plan.
+
+STRICT RULES:
+- NEVER invent unreadable price levels: derive them from the image's price scale. If the scale is not readable, give relative levels (in % from the estimated price) and say so in "avertissements".
+- The ratioRisqueRendement field must be consistent: |(TP1 - entree)| / |(entree - stopLoss)|.
+- If the setup is not clear enough to trade, set "biais": "NEUTRE" and explain what is missing or what to wait for.
+- "biais" must be exactly one of these three French codes: "ACHAT" (buy), "VENTE" (sell), "NEUTRE" (neutral). Keep these codes in French.
+- Unknown numeric fields must be null (not an empty string).
+- Write every text value in ENGLISH. Keep the JSON keys exactly as in the schema below (they are in French on purpose).
+- Be dense and concise: 4 to 8 sentences per analysis section, no filler. The full JSON response must fit in a single message.
+- Fill "evenementsProches" with the macro events from the provided list that concern the analysed asset (leave empty if none). If a high-impact event concerning the asset falls within 3 hours of the analysis, you MUST add a warning recommending not to hold a position through the release, and adapt the management advice accordingly.
+- Reply ONLY with a valid JSON object, no surrounding text, no markdown fences, using this schema:
+{
+  "actif": "string",
+  "uniteDeTemps": "string or null",
+  "biais": "ACHAT" | "VENTE" | "NEUTRE",
+  "confiance": 0-100,
+  "prixActuel": number | null,
+  "entree": number | null,
+  "zoneEntree": { "min": number|null, "max": number|null },
+  "stopLoss": number | null,
+  "takeProfits": [ { "niveau": number|null, "commentaire": "string" } ],
+  "ratioRisqueRendement": number | null,
+  "figuresDetectees": ["string"],
+  "indicateurs": [ { "nom": "string", "lecture": "string", "implication": "bullish|bearish|neutral" } ],
+  "niveauxCles": { "supports": [number], "resistances": [number] },
+  "analyseTechnique": "detailed markdown (structured paragraphs)",
+  "analyseFondamentale": "detailed markdown",
+  "invalidation": "what invalidates the scenario",
+  "gestion": "position management advice (partials, break-even, trailing)",
+  "evenementsProches": ["string — macro events from the provided list that concern the asset (empty if none)"],
+  "avertissements": ["string"]
+}`;
+
 // ---------------------------------------------------------------------------
 // Utilitaires
 // ---------------------------------------------------------------------------
@@ -390,7 +432,7 @@ if (IS_LOOPBACK) {
   app.use((req, res, next) => {
     const h = String(req.headers.host || '').toLowerCase().replace(/:\d+$/, '');
     if (LOCAL_HOSTS.has(h)) return next();
-    res.status(403).send('Hôte non autorisé.');
+    res.status(403).send('Host not allowed. / Hôte non autorisé.');
   });
 }
 
@@ -410,7 +452,7 @@ if (APP_PASSWORD) {
       if (i !== -1 && safeEqual(user, APP_USER) & safeEqual(pass, APP_PASSWORD)) return next();
     }
     res.set('WWW-Authenticate', 'Basic realm="Tradewee", charset="UTF-8"');
-    res.status(401).send('Authentification requise.');
+    res.status(401).send('Authentication required. / Authentification requise.');
   });
 }
 
@@ -432,6 +474,7 @@ function resolveKeyFor(body, savedUrl, savedKey) {
 }
 
 app.use(express.json({ limit: '40mb' }));
+app.use(languageMiddleware); // langue des réponses : en-tête X-Lang (en par défaut)
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(UPLOADS_DIR));
 
@@ -633,7 +676,7 @@ app.post('/api/test-connection', async (req, res) => {
     const configured = body.model || s.model;
     const mdl = resolveModel(url, configured);
     const out = await chatWithFallback(url, key, mdl,
-      { messages: [{ role: 'user', content: 'Réponds uniquement: OK' }], max_tokens: 10 }, 20000, 70000);
+      { messages: [{ role: 'user', content: req.lang === 'en' ? 'Reply only: OK' : 'Réponds uniquement: OK' }], max_tokens: 10 }, 20000, 70000);
     if (out.error) return res.status(400).json({ ok: false, error: out.error });
     if (!out.r.ok) {
       const msg = extractApiError(out.j, out.r.status);
@@ -756,7 +799,9 @@ app.post('/api/analyze', async (req, res) => {
     try {
       const alerts = await getFinancialJuice();
       const top = alerts.slice(0, 10).map(a => `- [${a.date}] ${a.title}`).join('\n');
-      if (top) newsContext = `\n\nNEWS RÉCENTES (FinancialJuice, pour le volet fondamental) :\n${top}`;
+      if (top) newsContext = req.lang === 'en'
+        ? `\n\nRECENT NEWS (FinancialJuice, for the fundamental part):\n${top}`
+        : `\n\nNEWS RÉCENTES (FinancialJuice, pour le volet fondamental) :\n${top}`;
     } catch { /* pas bloquant */ }
   }
 
@@ -765,18 +810,31 @@ app.post('/api/analyze', async (req, res) => {
   try {
     highImpact = await getHighImpactEvents(asset);
     if (highImpact.length) {
+      const inWord = req.lang === 'en' ? 'in' : 'dans';
       const fmtIn = (m) => m >= 60
-        ? `dans ${Math.floor(m / 60)}h${String(m % 60).padStart(2, '0')}`
-        : `dans ${m} min`;
-      macroBlock = `\n\nÉVÉNEMENTS MACRO À FORT IMPACT DANS LES 24 H (à prendre en compte obligatoirement) :\n` +
+        ? `${inWord} ${Math.floor(m / 60)}h${String(m % 60).padStart(2, '0')}`
+        : `${inWord} ${m} min`;
+      macroBlock = (req.lang === 'en'
+        ? `\n\nHIGH-IMPACT MACRO EVENTS IN THE NEXT 24 H (must be taken into account):\n`
+        : `\n\nÉVÉNEMENTS MACRO À FORT IMPACT DANS LES 24 H (à prendre en compte obligatoirement) :\n`) +
         highImpact.map(e => `- [${fmtIn(e.minutesUntil)}] ${e.title} (${e.country})`).join('\n');
     }
   } catch { /* pas bloquant */ }
 
+  const en = req.lang === 'en';
+  const dirEn = { achat: 'BUY', vente: 'SELL' };
   const dirTxt = direction && direction !== 'aucun'
-    ? `\nBiais directionnel souhaité par l'utilisateur : ${direction.toUpperCase()} (à confronter à ta propre lecture, tu peux le contredire avec justification).`
+    ? (en
+      ? `\nUser's preferred directional bias: ${dirEn[direction] || String(direction).toUpperCase()} (check it against your own reading; you may disagree with justification).`
+      : `\nBiais directionnel souhaité par l'utilisateur : ${direction.toUpperCase()} (à confronter à ta propre lecture, tu peux le contredire avec justification).`)
     : '';
-  const userText = `Analyse ces ${images.length === 1 ? 'capture d’écran' : 'captures d’écran'} de trading et propose un plan de trade complet.
+  const userText = en ? `Analyze ${images.length === 1 ? 'this trading screenshot' : 'these trading screenshots'} and propose a complete trade plan.
+- Asset given by the user: ${asset || 'not specified (identify it on the image if possible)'}
+- Timeframe given: ${timeframe || 'not specified (identify it on the image if possible)'}
+- User notes / strategy: ${notes || 'none'}${dirTxt}
+- User risk management: balance ${balance} ${Number.isFinite(balance) ? '' : '(not set)'}, risk per trade ${riskPercent}%${newsContext}${macroBlock}
+
+Reminder: reply only with the JSON in the requested schema, with all text values in English.` : `Analyse ces ${images.length === 1 ? 'capture d’écran' : 'captures d’écran'} de trading et propose un plan de trade complet.
 - Actif indiqué par l'utilisateur : ${asset || 'non précisé (identifie-le sur l’image si possible)'}
 - Unité de temps indiquée : ${timeframe || 'non précisée (identifie-la sur l’image si possible)'}
 - Notes / stratégie de l'utilisateur : ${notes || 'aucune'}${dirTxt}
@@ -795,7 +853,7 @@ Rappel : réponds uniquement par le JSON au schéma demandé, en français.`;
   const url = baseUrl.replace(/\/+$/, '');
   const payload = {
     messages: [
-      { role: 'system', content: SYSTEM_PROMPT },
+      { role: 'system', content: en ? SYSTEM_PROMPT_EN : SYSTEM_PROMPT },
       { role: 'user', content }
     ],
     temperature: 0.3,

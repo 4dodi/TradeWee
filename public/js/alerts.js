@@ -45,7 +45,7 @@ window.AlertsMgr = {
     if (this.paused) return;
     const dot = $('#alerts-dot'), status = $('#alerts-status');
     dot.className = 'live-dot on';
-    status.textContent = 'Connexion au flux…';
+    status.textContent = t('Connexion au flux…');
     let items;
     try {
       items = await api('/api/alerts');
@@ -74,7 +74,7 @@ window.AlertsMgr = {
         const badge = $('#badge-alerts');
         badge.hidden = false;
         badge.textContent = this.unread > 99 ? '99+' : this.unread;
-        document.title = `(${this.unread}) Tradewee — Analyse de charts`;
+        document.title = `(${this.unread}) ${t('Tradewee — Analyse de charts')}`;
       }
     }
     for (const id of ids) this.seen.add(id);
@@ -84,22 +84,22 @@ window.AlertsMgr = {
     const freshIds = new Set(fresh.map(f => f.id));
     const sec = (APP.settings && APP.settings.alertsIntervalSec) || 30;
     this.lastItems = items;
-    status.textContent = `${items.length} news · MAJ auto toutes les ${sec} s · dernière : ${new Date().toLocaleTimeString('fr-FR')}`;
+    status.textContent = t('{n} news · MAJ auto toutes les {sec} s · dernière : {time}', { n: items.length, sec, time: new Date().toLocaleTimeString(LOCALE) });
     this.render(filtered, freshIds);
   },
 
   render(items, freshIds) {
     const list = $('#alerts-list');
     if (!items.length) {
-      list.innerHTML = '<p class="muted">Aucune news ne correspond à vos filtres.</p>';
+      list.innerHTML = `<p class="muted">${esc(t('Aucune news ne correspond à vos filtres.'))}</p>`;
       return;
     }
     list.innerHTML = items.slice(0, 120).map(i => {
       const d = new Date(i.date);
-      const t = isNaN(d) ? '' : d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      const hhmm = isNaN(d) ? '' : d.toLocaleTimeString(LOCALE, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
       return `
         <div class="alert-item ${freshIds.has(i.id) ? 'new' : ''}">
-          <span class="alert-time">${t}</span>
+          <span class="alert-time">${hhmm}</span>
           <span class="alert-title"><a href="${esc(safeUrl(i.link))}" target="_blank" rel="noopener noreferrer">${esc(i.title)}</a></span>
         </div>`;
     }).join('');
@@ -107,7 +107,7 @@ window.AlertsMgr = {
 
   refreshButtons() {
     $('#al-sound').classList.toggle('sound-on', this.sound);
-    $('#al-sound').textContent = this.sound ? '🔊 Son' : '🔈 Son';
+    $('#al-sound').textContent = this.sound ? t('🔊 Son') : t('🔈 Son');
     $('#al-notify').classList.toggle('notif-on', this.notify && Notification.permission === 'granted');
   },
 
@@ -115,16 +115,16 @@ window.AlertsMgr = {
     this.unread = 0;
     const badge = $('#badge-alerts');
     badge.hidden = true;
-    document.title = 'Tradewee — Analyse de charts';
+    document.title = t('Tradewee — Analyse de charts');
   }
 };
 
 /* ---------- Écouteurs ---------- */
 $('#al-pause').addEventListener('click', () => {
   AlertsMgr.paused = !AlertsMgr.paused;
-  $('#al-pause').textContent = AlertsMgr.paused ? '▶️ Reprendre' : '⏸ Pause';
+  $('#al-pause').textContent = AlertsMgr.paused ? t('▶️ Reprendre') : t('⏸ Pause');
   $('#alerts-dot').className = AlertsMgr.paused ? 'live-dot off' : 'live-dot on';
-  $('#alerts-status').textContent = AlertsMgr.paused ? 'Flux en pause.' : 'Reprise…';
+  $('#alerts-status').textContent = AlertsMgr.paused ? t('Flux en pause.') : t('Reprise…');
   if (!AlertsMgr.paused) AlertsMgr.poll();
 });
 
@@ -144,7 +144,7 @@ $('#al-notify').addEventListener('click', async () => {
   }
   localStorage.setItem('tw-notify', AlertsMgr.notify ? '1' : '0');
   AlertsMgr.refreshButtons();
-  toast(AlertsMgr.notify ? 'Notifications activées ✓' : 'Notifications désactivées.');
+  toast(AlertsMgr.notify ? t('Notifications activées ✓') : t('Notifications désactivées.'));
 });
 
 ['al-include', 'al-exclude'].forEach(id =>

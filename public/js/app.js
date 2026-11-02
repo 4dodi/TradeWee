@@ -32,10 +32,10 @@ async function loadConfig() {
 function updateAiStatus() {
   const el = $('#ai-status');
   if (APP.settings && APP.settings.hasKey) {
-    el.textContent = `IA : ${APP.settings.model} ✓`;
+    el.textContent = t('IA : {model} ✓', { model: APP.settings.model || t('auto') });
     el.className = 'ai-status ok';
   } else {
-    el.textContent = 'IA : aucune clé API (voir Réglages)';
+    el.textContent = t('IA : aucune clé API (voir Réglages)');
     el.className = 'ai-status ko';
   }
 }
@@ -65,14 +65,14 @@ const KEY_URLS = {
 
 /* Conseils spécifiques par fournisseur (quotas, particularités) */
 const PROVIDER_HINTS = {
-  gemini: '🆓 Gratuit : créez une clé sur Google AI Studio (compte Google suffit). Laissez le modèle vide : l’app détecte automatiquement le modèle Gemini avec vision de votre compte (les noms changent souvent).',
-  groq: '🆓 Gratuit et ultra rapide. ⚠️ Groq a retiré ses modèles vision (Llama 4) de son catalogue : après avoir collé votre clé, cliquez sur « 📋 Lister » — s’il n’y a aucun modèle acceptant les images, préférez Gemini ou OpenRouter pour l’analyse de charts.',
-  mistral: '🆓 Gratuit : activez le plan « Experiment » gratuit de La Plateforme à l’inscription, puis créez une clé API.',
-  github: '🆓 Gratuit avec un compte GitHub : créez un Personal Access Token (fine-grained, permission « Models : read ») et collez-le comme clé.',
-  openrouter: '🆓 Gratuit : les modèles « :free » ne coûtent rien (quotas/jour). Modèles gratuits qui lisent les images : google/gemma-4-31b-it:free, nvidia/nemotron-3.5-super-vl:free, thinkingmachines/inkling:free… Cliquez sur « 📋 Lister » pour voir ceux de votre compte.',
-  zai: '💳 Payant : clé sur z.ai (tarifs compétitifs, GLM-4.5V très bon en lecture de charts).',
-  openai: '💳 Payant : clé sur platform.openai.com (nécessite un crédit).',
-  custom: 'Toute API compatible OpenAI : renseignez l’URL de base (…/v1) et le modèle avec vision.'
+  gemini: t('🆓 Gratuit : créez une clé sur Google AI Studio (compte Google suffit). Laissez le modèle vide : l’app détecte automatiquement le modèle Gemini avec vision de votre compte (les noms changent souvent).'),
+  groq: t('🆓 Gratuit et ultra rapide. ⚠️ Groq a retiré ses modèles vision (Llama 4) de son catalogue : après avoir collé votre clé, cliquez sur « 📋 Lister » — s’il n’y a aucun modèle acceptant les images, préférez Gemini ou OpenRouter pour l’analyse de charts.'),
+  mistral: t('🆓 Gratuit : activez le plan « Experiment » gratuit de La Plateforme à l’inscription, puis créez une clé API.'),
+  github: t('🆓 Gratuit avec un compte GitHub : créez un Personal Access Token (fine-grained, permission « Models : read ») et collez-le comme clé.'),
+  openrouter: t('🆓 Gratuit : les modèles « :free » ne coûtent rien (quotas/jour). Modèles gratuits qui lisent les images : google/gemma-4-31b-it:free, nvidia/nemotron-3.5-super-vl:free, thinkingmachines/inkling:free… Cliquez sur « 📋 Lister » pour voir ceux de votre compte.'),
+  zai: t('💳 Payant : clé sur z.ai (tarifs compétitifs, GLM-4.5V très bon en lecture de charts).'),
+  openai: t('💳 Payant : clé sur platform.openai.com (nécessite un crédit).'),
+  custom: t('Toute API compatible OpenAI : renseignez l’URL de base (…/v1) et le modèle avec vision.')
 };
 
 function updateProviderUi() {
@@ -81,7 +81,7 @@ function updateProviderUi() {
   if (KEY_URLS[p]) {
     link.href = KEY_URLS[p];
     link.hidden = false;
-    link.textContent = p === 'github' ? '🔑 Créer un token GitHub →' : '🔑 Obtenir une clé API →';
+    link.textContent = p === 'github' ? t('🔑 Créer un token GitHub →') : t('🔑 Obtenir une clé API →');
   } else {
     link.hidden = true;
   }
@@ -99,7 +99,7 @@ function fillSettingsForm() {
   const stale = knownDefaults.includes(s.model) && preset && preset.model !== s.model;
   $('#st-model').value = (s.model && !stale) ? s.model : (preset ? preset.model : (s.model || ''));
   $('#st-model').placeholder = (preset && !preset.model && !$('#st-model').value)
-    ? 'auto — modèle détecté par l’app' : 'ex : glm-4.5v';
+    ? t('auto — modèle détecté par l’app') : t('ex : glm-4.5v');
   $('#st-balance').value = s.balance ?? '';
   $('#st-risk').value = s.riskPercent ?? '';
   $('#st-blackout').value = s.blackoutMinutes ?? 60;
@@ -109,7 +109,7 @@ function fillSettingsForm() {
   $('#st-interval').value = s.alertsIntervalSec ?? 30;
   $('#st-news').checked = !!s.useNewsContext;
   $('#st-key').value = '';
-  $('#st-key-hint').textContent = s.hasKey ? `Clé enregistrée : ${s.apiKeyMasked}` : 'Aucune clé enregistrée.';
+  $('#st-key-hint').textContent = s.hasKey ? t('Clé enregistrée : {key}', { key: s.apiKeyMasked }) : t('Aucune clé enregistrée.');
   updateProviderUi();
   renderProviders();
 }
@@ -121,11 +121,11 @@ function renderProviders() {
   const list = (APP.settings && APP.settings.providers) || [];
   box.innerHTML = list.map((p, i) => `
     <div class="prov-row" data-i="${i}">
-      <div class="field"><input data-p="name" placeholder="Nom (ex : Gemini 2)" value="${esc(p.name)}"></div>
+      <div class="field"><input data-p="name" placeholder="${esc(t('Nom (ex : Gemini 2)'))}" value="${esc(p.name)}"></div>
       <div class="field"><input data-p="baseUrl" placeholder="https://…/v1" value="${esc(p.baseUrl)}"></div>
-      <div class="field"><input data-p="model" placeholder="modèle" value="${esc(p.model)}"></div>
-      <div class="field"><input data-p="apiKey" type="password" placeholder="${p.hasKey ? 'clé : ' + p.apiKeyMasked : 'clé API'}"></div>
-      <button class="prov-del" type="button" title="Retirer">✕</button>
+      <div class="field"><input data-p="model" placeholder="${esc(t('modèle'))}" value="${esc(p.model)}"></div>
+      <div class="field"><input data-p="apiKey" type="password" placeholder="${esc(p.hasKey ? t('clé : {key}', { key: p.apiKeyMasked }) : t('clé API'))}"></div>
+      <button class="prov-del" type="button" title="${esc(t('Retirer'))}">✕</button>
     </div>`).join('');
   box.querySelectorAll('.prov-del').forEach(btn => btn.addEventListener('click', () => {
     const i = +btn.closest('.prov-row').getAttribute('data-i');
@@ -147,15 +147,15 @@ function collectProviders() {
 $('#st-add-provider').addEventListener('click', () => {
   if (!APP.settings) return;
   if (!Array.isArray(APP.settings.providers)) APP.settings.providers = [];
-  if (APP.settings.providers.length >= 4) { toast('4 IA supplémentaires maximum.', 'err'); return; }
-  APP.settings.providers.push({ name: 'IA ' + (APP.settings.providers.length + 1), baseUrl: '', model: '', apiKey: '', hasKey: false, apiKeyMasked: '' });
+  if (APP.settings.providers.length >= 4) { toast(t('4 IA supplémentaires maximum.'), 'err'); return; }
+  APP.settings.providers.push({ name: t('IA {n}', { n: APP.settings.providers.length + 1 }), baseUrl: '', model: '', apiKey: '', hasKey: false, apiKeyMasked: '' });
   renderProviders();
 });
 
 $('#st-provider').addEventListener('change', () => {
   const p = PROVIDER_PRESETS[$('#st-provider').value];
   if (p) { $('#st-baseurl').value = p.baseUrl; $('#st-model').value = p.model; }
-  $('#st-model').placeholder = (p && !p.model) ? 'auto — modèle détecté par l’app' : 'ex : glm-4.5v';
+  $('#st-model').placeholder = (p && !p.model) ? t('auto — modèle détecté par l’app') : t('ex : glm-4.5v');
   updateProviderUi();
 });
 
@@ -181,7 +181,7 @@ $('#st-save').addEventListener('click', async () => {
   if (key) body.settings.apiKey = key;
   try {
     await api('/api/config', { method: 'PUT', body: JSON.stringify(body) });
-    toast('Réglages enregistrés ✓', 'ok');
+    toast(t('Réglages enregistrés ✓'), 'ok');
     await loadConfig();
     window.AlertsMgr && AlertsMgr.applyInterval();
   } catch (e) { toast(e.message, 'err'); }
@@ -190,25 +190,26 @@ $('#st-save').addEventListener('click', async () => {
 $('#st-models').addEventListener('click', async () => {
   const p = PROVIDER_PRESETS[$('#st-provider').value];
   const baseUrl = $('#st-baseurl').value.trim() || (p ? p.baseUrl : '');
-  if (!baseUrl) { toast('Renseignez d’abord l’URL de base de l’API.', 'err'); return; }
+  if (!baseUrl) { toast(t('Renseignez d’abord l’URL de base de l’API.'), 'err'); return; }
   try {
     const j = await api('/api/models', {
       method: 'POST',
       body: JSON.stringify({ baseUrl, apiKey: $('#st-key').value.trim() || undefined })
     });
     $('#model-list').innerHTML = (j.models || []).map(m => `<option value="${esc(m)}">`).join('');
-    if (!(j.models || []).length) toast('Le fournisseur n’a renvoyé aucun modèle.', 'err');
-    else toast(`${j.models.length} modèles disponibles — cliquez dans le champ Modèle pour en choisir un ✓`, 'ok');
+    if (!(j.models || []).length) toast(t('Le fournisseur n’a renvoyé aucun modèle.'), 'err');
+    else toast(t('{n} modèles disponibles — cliquez dans le champ Modèle pour en choisir un ✓', { n: j.models.length }), 'ok');
   } catch (e) { toast(e.message, 'err'); }
 });
 
 $('#st-backup').addEventListener('click', () => {
   window.location.href = '/api/backup?includeUploads=1';
-  toast('Sauvegarde en cours de téléchargement…', 'ok');
+  toast(t('Sauvegarde en cours de téléchargement…'), 'ok');
 });
 
-$('#st-test').addEventListener('click', async () => {  const res = $('#st-test-result');
-  res.textContent = 'Test en cours…';
+$('#st-test').addEventListener('click', async () => {
+  const res = $('#st-test-result');
+  res.textContent = t('Test en cours…');
   res.className = 'test-result';
   const p = PROVIDER_PRESETS[$('#st-provider').value];
   const body = {
@@ -219,11 +220,11 @@ $('#st-test').addEventListener('click', async () => {  const res = $('#st-test-r
   try {
     const j = await api('/api/test-connection', { method: 'POST', body: JSON.stringify(body) });
     if (j.ok) {
-      res.textContent = `✓ Connexion OK — modèle « ${j.model} » : "${j.reply}"`;
+      res.textContent = t('✓ Connexion OK — modèle « {model} » : "{reply}"', { model: j.model, reply: j.reply });
       res.className = 'test-result ok';
       if (j.discovered) {
         $('#st-model').value = j.model;
-        toast(j.note || 'Modèle détecté automatiquement ✓', 'ok');
+        toast(j.note || t('Modèle détecté automatiquement ✓'), 'ok');
       }
     } else { res.textContent = `✗ ${j.error}`; res.className = 'test-result ko'; }
   } catch (e) {
@@ -235,5 +236,5 @@ $('#st-test').addEventListener('click', async () => {  const res = $('#st-test-r
 /* ---------- Démarrage ---------- */
 loadConfig().catch(e => {
   console.error(e);
-  toast('Impossible de charger la configuration : ' + e.message, 'err');
+  toast(t('Impossible de charger la configuration : {msg}', { msg: e.message }), 'err');
 });

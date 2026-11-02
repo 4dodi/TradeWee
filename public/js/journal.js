@@ -1,4 +1,6 @@
 /* ============ Journal de trades & statistiques ============ */
+// « t » désigne un trade dans ce fichier : alias de la fonction de traduction
+const tj = t;
 window.JournalMgr = {
   trades: [],
   filters: { asset: '', biais: '', modele: '' },
@@ -42,7 +44,7 @@ window.JournalMgr = {
   /* ---------- Backtest visuel : évolution du trade vs prix actuel ---------- */
   async showEvolution(trade) {
     const overlay = $('#modal-overlay'), box = $('#modal-box');
-    box.innerHTML = '<h3>🔍 Évolution du trade</h3><p class="modal-sub">Récupération du prix actuel…</p>';
+    box.innerHTML = `<h3>🔍 ${esc(tj('Évolution du trade'))}</h3><p class="modal-sub">${esc(tj('Récupération du prix actuel…'))}</p>`;
     overlay.hidden = false;
 
     const niv = trade.niveaux || {};
@@ -58,10 +60,10 @@ window.JournalMgr = {
     const close = () => { overlay.hidden = true; box.innerHTML = ''; };
 
     if (price == null) {
-      box.innerHTML = `<h3>🔍 Évolution du trade</h3>
-        <p class="modal-sub">${esc(err || 'Prix indisponible.')}</p>
-        <p class="muted">Le prix temps réel n'est disponible que pour BTCUSD, ETHUSD et XAUUSD (source CoinGecko, sans clé).</p>
-        <div class="btn-row"><button class="btn btn-ghost" id="ev-close">Fermer</button></div>`;
+      box.innerHTML = `<h3>🔍 ${esc(tj('Évolution du trade'))}</h3>
+        <p class="modal-sub">${esc(err || tj('Prix indisponible.'))}</p>
+        <p class="muted">${esc(tj('Le prix temps réel n’est disponible que pour BTCUSD, ETHUSD et XAUUSD (source CoinGecko, sans clé).'))}</p>
+        <div class="btn-row"><button class="btn btn-ghost" id="ev-close">${esc(tj('Fermer'))}</button></div>`;
       $('#ev-close').addEventListener('click', close);
       return;
     }
@@ -74,28 +76,28 @@ window.JournalMgr = {
     const tpState = tps.map((tp, i) => {
       if (tp == null) return null;
       const touched = dir > 0 ? price >= tp : price <= tp;
-      return `<div class="bt-cell"><div class="k">TP${i + 1} (${fmtNum(tp)})</div><div class="v ${touched ? 'pos' : ''}">${touched ? '✅ touché' : '⏳ en cours'}</div></div>`;
+      return `<div class="bt-cell"><div class="k">TP${i + 1} (${fmtNum(tp)})</div><div class="v ${touched ? 'pos' : ''}">${touched ? esc(tj('✅ touché')) : esc(tj('⏳ en cours'))}</div></div>`;
     }).filter(Boolean).join('');
     const slTouched = niv.stopLoss != null && (dir > 0 ? price <= niv.stopLoss : price >= niv.stopLoss);
 
     let verdict, vCls;
-    if (slTouched) { verdict = `🛑 Stop-loss touché — trade perdant`; vCls = 'stop-lim'; }
-    else if (rNow != null && rNow >= 1) { verdict = `✅ Trade gagnant ${rNow > 0 ? '+' : ''}${rNow.toFixed(2)} R`; vCls = 'warn-lim'; }
-    else if (rNow != null && rNow < 0) { verdict = `⏳ Trade en cours, drawdown ${rNow.toFixed(2)} R`; vCls = 'stop-lim'; }
-    else { verdict = `⏳ Trade en cours ${rNow != null ? '(' + (rNow > 0 ? '+' : '') + rNow.toFixed(2) + ' R)' : ''}`; vCls = 'warn-lim'; }
+    if (slTouched) { verdict = tj('🛑 Stop-loss touché — trade perdant'); vCls = 'stop-lim'; }
+    else if (rNow != null && rNow >= 1) { verdict = tj('✅ Trade gagnant {r} R', { r: (rNow > 0 ? '+' : '') + rNow.toFixed(2) }); vCls = 'warn-lim'; }
+    else if (rNow != null && rNow < 0) { verdict = tj('⏳ Trade en cours, drawdown {r} R', { r: rNow.toFixed(2) }); vCls = 'stop-lim'; }
+    else { verdict = `${tj('⏳ Trade en cours')} ${rNow != null ? '(' + (rNow > 0 ? '+' : '') + rNow.toFixed(2) + ' R)' : ''}`; vCls = 'warn-lim'; }
 
     box.innerHTML = `
-      <h3>🔍 Évolution — ${esc(trade.asset)} ${esc(trade.biais)}</h3>
-      <p class="modal-sub">Source : CoinGecko (prix spot USD)</p>
+      <h3>🔍 ${esc(tj('Évolution'))} — ${esc(trade.asset)} ${esc(biasLabel(trade.biais))}</h3>
+      <p class="modal-sub">${esc(tj('Source : CoinGecko (prix spot USD)'))}</p>
       <div class="bt-modal-grid">
-        <div class="bt-cell"><div class="k">Entrée</div><div class="v">${fmtNum(entree)}</div></div>
-        <div class="bt-cell"><div class="k">Prix actuel</div><div class="v">${fmtNum(price)}</div></div>
-        <div class="bt-cell"><div class="k">Variation</div><div class="v ${gain >= 0 ? 'pos' : 'neg'}">${gain >= 0 ? '+' : ''}${fmtNum(gain)} (${gainPct >= 0 ? '+' : ''}${gainPct.toFixed(2)} %)</div></div>
-        <div class="bt-cell"><div class="k">Stop-loss (${fmtNum(niv.stopLoss)})</div><div class="v ${slTouched ? 'neg' : 'pos'}">${slTouched ? '🛑 touché' : '✅ intact'}</div></div>
+        <div class="bt-cell"><div class="k">${esc(tj('Entrée'))}</div><div class="v">${fmtNum(entree)}</div></div>
+        <div class="bt-cell"><div class="k">${esc(tj('Prix actuel'))}</div><div class="v">${fmtNum(price)}</div></div>
+        <div class="bt-cell"><div class="k">${esc(tj('Variation'))}</div><div class="v ${gain >= 0 ? 'pos' : 'neg'}">${gain >= 0 ? '+' : ''}${fmtNum(gain)} (${gainPct >= 0 ? '+' : ''}${gainPct.toFixed(2)} %)</div></div>
+        <div class="bt-cell"><div class="k">Stop-loss (${fmtNum(niv.stopLoss)})</div><div class="v ${slTouched ? 'neg' : 'pos'}">${slTouched ? esc(tj('🛑 touché')) : esc(tj('✅ intact'))}</div></div>
         ${tpState}
       </div>
-      <div class="bt-verdict ${vCls}">${verdict}</div>
-      <div class="btn-row" style="margin-top:14px"><button class="btn btn-ghost" id="ev-close">Fermer</button></div>`;
+      <div class="bt-verdict ${vCls}">${esc(verdict)}</div>
+      <div class="btn-row" style="margin-top:14px"><button class="btn btn-ghost" id="ev-close">${esc(tj('Fermer'))}</button></div>`;
     $('#ev-close').addEventListener('click', close);
   },
 
@@ -103,9 +105,9 @@ window.JournalMgr = {
     return [...new Set(this.trades.map(t => t[field]).filter(v => v !== '' && v != null))].sort();
   },
 
-  fillSelect(sel, values, current) {
+  fillSelect(sel, values, current, label = v => v) {
     const el = $(sel);
-    el.innerHTML = '<option value="">Tous</option>' + values.map(v => `<option value="${esc(v)}" ${v === current ? 'selected' : ''}>${esc(v)}</option>`).join('');
+    el.innerHTML = `<option value="">${esc(tj('Tous'))}</option>` + values.map(v => `<option value="${esc(v)}" ${v === current ? 'selected' : ''}>${esc(label(v))}</option>`).join('');
   },
 
   filtered() {
@@ -118,11 +120,11 @@ window.JournalMgr = {
 
   render() {
     this.fillSelect('#jf-asset', this.unique('asset'), this.filters.asset);
-    this.fillSelect('#jf-biais', this.unique('biais'), this.filters.biais);
+    this.fillSelect('#jf-biais', this.unique('biais'), this.filters.biais, biasLabel);
     this.fillSelect('#jf-modele', this.unique('modele'), this.filters.modele);
 
     const rows = this.filtered();
-    $('#jf-count').textContent = `${rows.length} trade(s) affiché(s) / ${this.trades.length}`;
+    $('#jf-count').textContent = tj('{n} trade(s) affiché(s) / {total}', { n: rows.length, total: this.trades.length });
 
     const closed = rows.filter(t => t.pnlR != null);
     const wins = closed.filter(t => t.pnlR > 0);
@@ -141,25 +143,25 @@ window.JournalMgr = {
       </div>`;
     const rTxt = v => v == null ? '—' : (v > 0 ? '+' : '') + v.toFixed(2) + ' R';
     $('#stats-grid').innerHTML =
-      stat('Trades journalisés', rows.length) +
-      stat('Trades clôturés', closed.length) +
-      stat('Winrate', winrate == null ? '—' : Math.round(winrate * 100) + ' %', winrate == null ? '' : winrate >= 0.5 ? 'pos' : 'neg') +
-      stat('R moyen', rTxt(rMoy), rMoy == null ? '' : rMoy >= 0 ? 'pos' : 'neg') +
-      stat('R total', rTxt(rTot), rTot == null ? '' : rTot >= 0 ? 'pos' : 'neg') +
-      stat('Espérance', rTxt(expectancy), expectancy == null ? '' : expectancy >= 0 ? 'pos' : 'neg');
+      stat(tj('Trades journalisés'), rows.length) +
+      stat(tj('Trades clôturés'), closed.length) +
+      stat(tj('Winrate'), winrate == null ? '—' : Math.round(winrate * 100) + ' %', winrate == null ? '' : winrate >= 0.5 ? 'pos' : 'neg') +
+      stat(tj('R moyen'), rTxt(rMoy), rMoy == null ? '' : rMoy >= 0 ? 'pos' : 'neg') +
+      stat(tj('R total'), rTxt(rTot), rTot == null ? '' : rTot >= 0 ? 'pos' : 'neg') +
+      stat(tj('Espérance'), rTxt(expectancy), expectancy == null ? '' : expectancy >= 0 ? 'pos' : 'neg');
 
     const tb = $('#trades-tbody');
     if (!rows.length) {
-      tb.innerHTML = `<tr><td colspan="12" class="muted" style="text-align:center;padding:24px">Aucun trade — journalisez un plan depuis l'onglet Analyse (bouton 📓).</td></tr>`;
+      tb.innerHTML = `<tr><td colspan="12" class="muted" style="text-align:center;padding:24px">${esc(tj('Aucun trade — journalisez un plan depuis l’onglet Analyse (bouton 📓).'))}</td></tr>`;
       return;
     }
     const niv = t => t.niveaux || {};
     const raisonOptsFor = t => [''].concat(this.RAISONS).map(r =>
-      `<option value="${esc(r)}" ${(t.raisonNonTrade || '') === r ? 'selected' : ''}>${r === '' ? '— raison —' : esc(r)}</option>`).join('');
+      `<option value="${esc(r)}" ${(t.raisonNonTrade || '') === r ? 'selected' : ''}>${r === '' ? esc(tj('— raison —')) : esc(tj(r))}</option>`).join('');
     const statutOptsFor = t => ['planifié', 'fillé', 'clôturé', 'annulé', 'expiré'].map(s =>
-      `<option value="${s}" ${t.statut === s ? 'selected' : ''}>${s}</option>`).join('');
+      `<option value="${s}" ${t.statut === s ? 'selected' : ''}>${esc(tj(s))}</option>`).join('');
     const sortieOptsFor = t => ['', 'TP1', 'TP2', 'TP3', 'SL', 'manuel'].map(s =>
-      `<option value="${s}" ${((t.sortie && t.sortie.type) || '') === s ? 'selected' : ''}>${s === '' ? '—' : s}</option>`).join('');
+      `<option value="${s}" ${((t.sortie && t.sortie.type) || '') === s ? 'selected' : ''}>${s === '' ? '—' : esc(tj(s))}</option>`).join('');
 
     tb.innerHTML = rows.map(t => {
       const raisonOpts = raisonOptsFor(t), statutOpts = statutOptsFor(t), sortieOpts = sortieOptsFor(t);
@@ -167,12 +169,12 @@ window.JournalMgr = {
       const uCls = t.pnlUsd == null ? '' : t.pnlUsd >= 0 ? 'pos' : 'neg';
       return `
         <tr data-id="${esc(t.id)}">
-          <td class="muted">${new Date(t.date).toLocaleDateString('fr-FR')}</td>
+          <td class="muted">${new Date(t.date).toLocaleDateString(LOCALE)}</td>
           <td class="sym">${esc(t.asset)}</td>
-          <td><span class="hist-bias ${t.biais === 'ACHAT' ? 'ACHAT' : t.biais === 'VENTE' ? 'VENTE' : 'NEUTRE'}">${esc(t.biais)}</span></td>
+          <td><span class="hist-bias ${t.biais === 'ACHAT' ? 'ACHAT' : t.biais === 'VENTE' ? 'VENTE' : 'NEUTRE'}">${esc(biasLabel(t.biais))}</span></td>
           <td>
             <div class="muted">${fmtNum(niv(t).entree)}</div>
-            <input class="tr-in" data-f="prixEntreeReel" type="number" step="any" placeholder="réel" value="${esc(t.prixEntreeReel ?? '')}">
+            <input class="tr-in" data-f="prixEntreeReel" type="number" step="any" placeholder="${esc(tj('réel'))}" value="${esc(t.prixEntreeReel ?? '')}">
           </td>
           <td>${fmtNum(niv(t).stopLoss)}</td>
           <td><select class="tr-in" data-f="statut">${statutOpts}</select></td>
@@ -180,11 +182,11 @@ window.JournalMgr = {
           <td><input class="tr-in" data-f="sortiePrix" type="number" step="any" value="${esc((t.sortie && t.sortie.prix) ?? '')}"></td>
           <td>
             <select class="tr-in" data-f="raisonNonTrade">${raisonOpts}</select>
-            <button class="btn btn-ghost tr-notrade" title="Marquer non tradé (annulé) avec la raison choisie">🚫</button>
+            <button class="btn btn-ghost tr-notrade" title="${esc(tj('Marquer non tradé (annulé) avec la raison choisie'))}">🚫</button>
           </td>
           <td class="${rCls}"><b>${t.pnlR == null ? '—' : (t.pnlR > 0 ? '+' : '') + t.pnlR.toFixed(2) + ' R'}</b></td>
           <td class="${uCls}">${t.pnlUsd == null ? '—' : (t.pnlUsd >= 0 ? '+' : '') + t.pnlUsd.toFixed(2) + ' $'}</td>
-          <td><button class="btn btn-ghost tr-save" title="Enregistrer">💾</button> <button class="btn btn-ghost tr-evo" title="Voir l'évolution">🔍</button></td>
+          <td><button class="btn btn-ghost tr-save" title="${esc(tj('Enregistrer'))}">💾</button> <button class="btn btn-ghost tr-evo" title="${esc(tj('Voir l’évolution'))}">🔍</button></td>
         </tr>`;
     }).join('');
   },
@@ -207,7 +209,7 @@ window.JournalMgr = {
     const id = tr.getAttribute('data-id');
     try {
       await api(`/api/trades/${id}`, { method: 'PUT', body: this.rowBody(tr) });
-      toast('Trade mis à jour ✓', 'ok');
+      toast(tj('Trade mis à jour ✓'), 'ok');
       await this.load();
     } catch (e) { toast(e.message, 'err'); }
   },
@@ -217,7 +219,7 @@ window.JournalMgr = {
     const raison = tr.querySelector('.tr-in[data-f="raisonNonTrade"]').value || 'autre';
     try {
       await api(`/api/trades/${id}`, { method: 'PUT', body: JSON.stringify({ statut: 'annulé', raisonNonTrade: raison }) });
-      toast('Marqué non tradé (annulé) ✓', 'ok');
+      toast(tj('Marqué non tradé (annulé) ✓'), 'ok');
       await this.load();
     } catch (e) { toast(e.message, 'err'); }
   }

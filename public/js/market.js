@@ -30,13 +30,13 @@ window.MarketMgr = {
   async refreshQuotes() {
     const box = $('#market-quotes');
     if (!box) return;
-    box.innerHTML = '<p class="muted">Récupération des cotations…</p>';
+    box.innerHTML = `<p class="muted">${esc(t('Récupération des cotations…'))}</p>`;
     try {
       const j = await api('/api/market/quotes?symbols=' + encodeURIComponent(this.symbols().join(',')));
       const entries = Object.entries(j.quotes || {});
-      if (!entries.length) { box.innerHTML = '<p class="muted">Aucune cotation disponible pour le moment.</p>'; return; }
+      if (!entries.length) { box.innerHTML = `<p class="muted">${esc(t('Aucune cotation disponible pour le moment.'))}</p>`; return; }
       box.innerHTML = `
-        <div class="muted" style="margin-bottom:8px">MAJ : ${new Date(j.at).toLocaleTimeString('fr-FR')} · sources CoinGecko (crypto, métaux) et BCE (forex)</div>
+        <div class="muted" style="margin-bottom:8px">${esc(t('MAJ : {time} · sources CoinGecko (crypto, métaux) et BCE (forex)', { time: new Date(j.at).toLocaleTimeString(LOCALE) }))}</div>
         <div class="quotes-grid">
           ${entries.map(([sym, q]) => `
             <div class="quote-cell">
@@ -46,7 +46,7 @@ window.MarketMgr = {
             </div>`).join('')}
         </div>`;
     } catch (e) {
-      box.innerHTML = `<p class="muted">⚠️ ${esc(e.message)} — réessayez dans un instant (CORS/réseau).</p>`;
+      box.innerHTML = `<p class="muted">⚠️ ${esc(e.message)} — ${esc(t('réessayez dans un instant (CORS/réseau).'))}</p>`;
     }
   },
 
@@ -57,19 +57,19 @@ window.MarketMgr = {
     const tb = $('#monitors-tbody');
     if (!tb) return;
     if (!list.length) {
-      tb.innerHTML = '<tr><td colspan="6" class="muted" style="text-align:center;padding:18px">Aucune surveillance — ajoutez-en une ci-dessus.</td></tr>';
+      tb.innerHTML = `<tr><td colspan="6" class="muted" style="text-align:center;padding:18px">${esc(t('Aucune surveillance — ajoutez-en une ci-dessus.'))}</td></tr>`;
       return;
     }
     tb.innerHTML = list.map(m => `
       <tr data-id="${esc(m.id)}">
         <td class="sym">${esc(m.symbol)}</td>
-        <td>${m.condition === 'above' ? '≥ passe au-dessus de' : '≤ passe sous'}</td>
+        <td>${m.condition === 'above' ? esc(t('≥ passe au-dessus de')) : esc(t('≤ passe sous'))}</td>
         <td><b>${fmtNum(m.target)}</b></td>
         <td>${m.lastPrice != null ? fmtNum(m.lastPrice) : '—'}</td>
         <td>${m.triggered
-          ? `<span class="type-tag" style="border-color:var(--red);color:#f87171">🔔 déclenchée ${new Date(m.triggeredAt).toLocaleString('fr-FR')}</span>`
-          : '<span class="type-tag">en veille</span>'}</td>
-        <td><button class="btn btn-ghost mon-del" title="Supprimer">🗑️</button></td>
+          ? `<span class="type-tag" style="border-color:var(--red);color:#f87171">🔔 ${esc(t('déclenchée {date}', { date: new Date(m.triggeredAt).toLocaleString(LOCALE) }))}</span>`
+          : `<span class="type-tag">${esc(t('en veille'))}</span>`}</td>
+        <td><button class="btn btn-ghost mon-del" title="${esc(t('Supprimer'))}">🗑️</button></td>
       </tr>`).join('');
   },
 
@@ -80,10 +80,10 @@ window.MarketMgr = {
       condition: $('#mk-condition').value,
       target: $('#mk-target').value
     };
-    if (!payload.symbol || payload.target === '') { toast('Symbole et prix cible requis.', 'err'); return; }
+    if (!payload.symbol || payload.target === '') { toast(t('Symbole et prix cible requis.'), 'err'); return; }
     try {
       await api('/api/monitors', { method: 'POST', body: JSON.stringify(payload) });
-      toast('Surveillance ajoutée ✓', 'ok');
+      toast(t('Surveillance ajoutée ✓'), 'ok');
       $('#mk-form').reset();
       await this.loadMonitors();
       await this.poll(true);
@@ -104,11 +104,11 @@ window.MarketMgr = {
     for (const a of j.alerts) {
       if (this.lastAlerts.some(x => x.symbol === a.symbol && x.target === a.target)) continue;
       this.lastAlerts.push(a);
-      const msg = `🔔 ${a.symbol} ${a.condition === 'above' ? '≥' : '≤'} ${fmtNum(a.target)} — prix actuel ${fmtNum(a.price)}`;
+      const msg = `🔔 ${a.symbol} ${a.condition === 'above' ? '≥' : '≤'} ${fmtNum(a.target)} — ${t('prix actuel')} ${fmtNum(a.price)}`;
       toast(msg, 'ok');
       try {
         if (Notification.permission === 'granted' && document.hidden) {
-          new Notification('🔔 Tradewee — Surveillance de prix', { body: msg });
+          new Notification(t('🔔 Tradewee — Surveillance de prix'), { body: msg });
         }
       } catch { /* notifications indisponibles */ }
       if (!silent) this.beep();
@@ -155,7 +155,7 @@ window.MarketMgr = {
       this.renderMcapChart();
     } catch (e) {
       const g = $('#ov-grid');
-      if (g) g.innerHTML = `<div class="card ov-card ov-wide"><p class="muted">⚠️ Vue d'ensemble indisponible : ${esc(e.message)}</p></div>`;
+      if (g) g.innerHTML = `<div class="card ov-card ov-wide"><p class="muted">⚠️ ${esc(t('Vue d’ensemble indisponible :'))} ${esc(e.message)}</p></div>`;
     }
   },
 
@@ -166,7 +166,7 @@ window.MarketMgr = {
     const ov = this.ov || {};
     const ls = ov.longShort || [];
     if (!ls.length && ov.derivatives == null) {
-      box.innerHTML = '<p class="muted">Données dérivés indisponibles.</p>';
+      box.innerHTML = `<p class="muted">${esc(t('Données dérivés indisponibles.'))}</p>`;
       return;
     }
     const avgRatio = ls.length ? ls.reduce((s, d) => s + d.ratio, 0) / ls.length : null;
@@ -175,22 +175,22 @@ window.MarketMgr = {
     const oi = ov.derivatives?.openInterest;
     box.innerHTML = `
       <div class="ov-stats">
-        <div class="ov-stat"><div class="lbl">Long/Short (30j) — comptes</div>
+        <div class="ov-stat"><div class="lbl">${esc(t('Long/Short (30j) — comptes'))}</div>
           <div class="vals">
             ${longPct != null ? `<span class="v" style="color:var(--green)">Long ${longPct.toFixed(1)}%</span>` : ''}
             ${shortPct != null ? `<span class="v" style="color:var(--red)">Short ${shortPct.toFixed(1)}%</span>` : ''}
           </div>
         </div>
-        ${oi != null ? `<div class="ov-stat"><div class="lbl">Open Interest total</div><div class="big">$${this.fmtBig(oi)}</div></div>` : ''}
+        ${oi != null ? `<div class="ov-stat"><div class="lbl">${esc(t('Open Interest total'))}</div><div class="big">$${this.fmtBig(oi)}</div></div>` : ''}
       </div>
       ${ls.length ? `<div class="ls-bars">${ls.map(d => {
         const longH = Math.round(d.long), shortH = Math.round(d.short);
-        return `<div class="ls-col" title="${new Date(d.t).toLocaleDateString('fr-FR')} — ratio L/S ${d.ratio.toFixed(2)}">
+        return `<div class="ls-col" title="${new Date(d.t).toLocaleDateString(LOCALE)} — ${esc(t('ratio L/S'))} ${d.ratio.toFixed(2)}">
           ${longH > shortH ? `<div class="bar bar-long" style="height:${longH}%"></div>` : `<div class="bar bar-short" style="height:${shortH}%"></div>`}
           <div class="bar bar-mini ${d.long >= d.short ? 'bar-short' : 'bar-long'}" style="height:12%"></div>
         </div>`;
       }).join('')}</div>
-      <div class="muted" style="font-size:11px;margin-top:6px">Ratio comptes longs/shorts BTC futures (Binance, 30 jours)</div>` : ''}`;
+      <div class="muted" style="font-size:11px;margin-top:6px">${esc(t('Ratio comptes longs/shorts BTC futures (Binance, 30 jours)'))}</div>` : ''}`;
   },
 
   /* --- Carte Statut : jauge Fear & Greed + Altcoin Season --- */
@@ -199,7 +199,7 @@ window.MarketMgr = {
     if (!box) return;
     const fg = this.ov?.fearGreed;
     const alt = this.ov?.altcoinSeason;
-    if (fg == null && alt == null) { box.innerHTML = '<p class="muted">Statut indisponible.</p>'; return; }
+    if (fg == null && alt == null) { box.innerHTML = `<p class="muted">${esc(t('Statut indisponible.'))}</p>`; return; }
 
     let gauge = '';
     if (fg) {
@@ -231,7 +231,7 @@ window.MarketMgr = {
       const pos = Math.max(4, Math.min(96, alt));
       altRow = `
         <div class="alt-row">
-          <div class="alt-head"><span class="alt-score">${alt}</span> <span class="muted">Altcoin Season (0 = saison BTC, 100 = altcoins)</span></div>
+          <div class="alt-head"><span class="alt-score">${alt}</span> <span class="muted">${esc(t('Altcoin Season (0 = saison BTC, 100 = altcoins)'))}</span></div>
           <div class="alt-bar">
             <div class="alt-fill" style="width:8%"></div>
             <div class="alt-fill" style="width:26%"></div>
@@ -249,12 +249,12 @@ window.MarketMgr = {
     const box = $('#ov-donut .ov-body');
     if (!box) return;
     const g = this.ov?.global;
-    if (!g || g.btcDominance == null) { box.innerHTML = '<p class="muted">Données indisponibles.</p>'; return; }
+    if (!g || g.btcDominance == null) { box.innerHTML = `<p class="muted">${esc(t('Données indisponibles.'))}</p>`; return; }
     const btc = g.btcDominance, eth = g.ethDominance ?? 0, others = 100 - btc - eth;
     const segs = [
       { l: 'Bitcoin', v: btc, c: '#3b82f6' },
       { l: 'Ethereum', v: eth, c: '#22c55e' },
-      { l: 'Autres', v: others, c: '#f59e0b' }
+      { l: t('Autres'), v: others, c: '#f59e0b' }
     ];
     let a = -Math.PI / 2;
     const cx = 70, cy = 70, R = 55, r = 34;
@@ -282,7 +282,7 @@ window.MarketMgr = {
     const box = $('#ov-trending .ov-body');
     if (!box) return;
     const list = this.ov?.trending || [];
-    if (!list.length) { box.innerHTML = '<p class="muted">Aucune donnée de tendance.</p>'; return; }
+    if (!list.length) { box.innerHTML = `<p class="muted">${esc(t('Aucune donnée de tendance.'))}</p>`; return; }
     box.innerHTML = `<div class="trend-list">${list.map((c, i) => `
       <div class="trend-row">
         <span class="trend-rank">${i + 1}</span>
@@ -308,12 +308,12 @@ window.MarketMgr = {
             <div class="big">$${this.fmtBig(g?.mcap)} ${chg != null ? this.fmtPct(chg) : ''}</div>
           </div>
           <div>
-            <div class="lbl muted">Volume 24h</div>
+            <div class="lbl muted">${esc(t('Volume 24h'))}</div>
             <div class="big">$${this.fmtBig(g?.volume)}</div>
           </div>
         </div>`;
       const pts = j.prices || [];
-      if (pts.length < 2) { box.innerHTML = stats + '<p class="muted">Historique indisponible.</p>'; return; }
+      if (pts.length < 2) { box.innerHTML = stats + `<p class="muted">${esc(t('Historique indisponible.'))}</p>`; return; }
       const W = 600, H = 140;
       const vs = pts.map(p => p.v);
       const min = Math.min(...vs), max = Math.max(...vs), rng = (max - min) || 1;
@@ -330,7 +330,7 @@ window.MarketMgr = {
           <path d="${dArea}" fill="url(#mcapGrad)"/>
           <path d="${dLine}" fill="none" stroke="${stroke}" stroke-width="2"/>
         </svg>
-        <div class="muted" style="font-size:11px">Capitalisation totale du marché crypto — CoinGecko</div>`;
+        <div class="muted" style="font-size:11px">${esc(t('Capitalisation totale du marché crypto — CoinGecko'))}</div>`;
     } catch (e) {
       box.innerHTML = `<p class="muted">⚠️ ${esc(e.message)}</p>`;
     }

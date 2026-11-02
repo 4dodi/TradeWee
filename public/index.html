@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tradewee — Analyse de charts</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📈</text></svg>">
-  <link rel="stylesheet" href="css/style.css?v=11">
+  <link rel="stylesheet" href="css/style.css?v=12">
 </head>
 <body>
   <div class="layout">
@@ -29,6 +29,12 @@
       </nav>
       <div class="sidebar-foot">
         <div id="ai-status" class="ai-status">IA : vérification…</div>
+        <label class="lang-switch" title="Langue / Language">🌐
+          <select id="lang-select" aria-label="Language">
+            <option value="en">English</option>
+            <option value="fr">Français</option>
+          </select>
+        </label>
         <p class="disclaimer-sm">Outil éducatif — ceci n'est pas un conseil en investissement.</p>
       </div>
     </aside>
@@ -396,13 +402,14 @@
   <div id="modal-overlay" hidden>
     <div class="modal" id="modal-box"></div>
   </div>
-  <script src="js/util.js?v=15"></script>
-  <script src="js/app.js?v=15"></script>
-  <script src="js/assets.js?v=15"></script>
-  <script src="js/analyze.js?v=15"></script>
-  <script src="js/calendar.js?v=14"></script>
-  <script src="js/alerts.js?v=15"></script>
-  <script src="js/journal.js?v=15"></script>
-  <script src="js/market.js?v=17"></script>
+  <script src="js/i18n.js?v=1"></script>
+  <script src="js/util.js?v=16"></script>
+  <script src="js/app.js?v=16"></script>
+  <script src="js/assets.js?v=16"></script>
+  <script src="js/analyze.js?v=16"></script>
+  <script src="js/calendar.js?v=15"></script>
+  <script src="js/alerts.js?v=16"></script>
+  <script src="js/journal.js?v=16"></script>
+  <script src="js/market.js?v=18"></script>
 </body>
 </html>

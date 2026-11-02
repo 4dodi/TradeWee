@@ -46,6 +46,12 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
   });
   assert.strictEqual(r.status, 400, 'la clé ne doit pas être envoyée à une autre URL');
 
+  // langue des messages : anglais par défaut / sur demande, français avec X-Lang: fr
+  const notFound = async (lang) => (await (await fetch(base + '/api/analyses/inconnu', { headers: lang ? { 'X-Lang': lang } : {} })).json()).error;
+  assert.strictEqual(await notFound('en'), 'Analysis not found.');
+  assert.strictEqual(await notFound(), 'Analysis not found.');
+  assert.strictEqual(await notFound('fr'), 'Analyse introuvable.');
+
   // protection DNS rebinding
   const http = require('http');
   const status = await new Promise((resolve, reject) => {
