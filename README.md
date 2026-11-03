@@ -65,6 +65,18 @@ The AI writes new analyses in the selected language. Every saved analysis also h
 
 The key is stored only on your machine, in `data/config.json` (excluded from Git).
 
+## Feedback that improves future analyses
+
+Every saved analysis has a **📝 Your feedback** card: rate the analysis (👍/👎), the entry (good / too early / too late), the stop loss (good / too tight / too wide), the take profits (good / too far / too close), the result (TP hit / SL hit / break-even / not triggered), and add a comment. Each click is saved; clicking the active choice again removes it.
+
+Before each new analysis, Tradewee summarises your last 40 rated analyses for the AI — overall, for the same asset, plus your latest comments — and asks it to adjust (e.g. place the stop beyond the nearest structure if stops were often too tight). The result shows how many feedbacks were taken into account. You can turn this off in **⚙️ Settings → Alerts & context**.
+
+## Reliability: busy AI providers
+
+- **Gemini**: Tradewee asks Gemini's recent “thinking” models for a low reasoning effort (`reasoning_effort: low`), which makes chart analyses much faster and far less likely to be refused with “model overloaded” (503). It waits a few seconds before retrying a busy model, then tries the other models available on your key.
+- **Backup AI**: if the main AI still fails, Tradewee tries your **Additional AIs** (Settings, the ones with an API key) in order, and the result says which one made the analysis. The backup must accept images. Turn it off with *If the main AI fails, use my additional AIs as backup*.
+- Error messages now show the provider's actual reason for each model tried (e.g. `503 The model is overloaded`).
+
 ## TradingView
 
 ### Draw your plans on your TradingView chart

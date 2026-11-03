@@ -232,7 +232,50 @@ window.AnalyzeMgr = {
       ${warns}
       ${comparisonHtml}
       <div class="btn-row" style="margin-top:14px">${entry.id ? `<button class="btn" id="btn-journal">📓 ${esc(t('Journaliser ce plan'))}</button><button class="btn" id="btn-notrade">🚫 ${esc(t('Non tradé'))}</button>` : ''}<button class="btn" id="btn-copyplan">📋 ${esc(t('Copier le plan'))}</button>${entry.id ? `<button class="btn" id="btn-sheets" title="${esc(t('Ajouter cette analyse à votre feuille Google Sheets'))}">📊 ${esc(entry.sheetsSavedAt ? t('Enregistré dans Sheets ✓') : t('Enregistrer dans Sheets'))}</button>` : ''}<button class="btn" id="btn-pine" title="${esc(t('Script Pine qui trace l’entrée, le SL et les TP sur votre graphique TradingView'))}">📈 ${esc(t('Vers TradingView'))}</button></div>
+      ${entry.id && entry.result ? AnalyzeMgr.feedbackHtml(entry) : ''}
     `;
+  },
+
+  /* ---------- Votre avis sur l'analyse (retour utilisateur) ---------- */
+  feedbackHtml(entry) {
+    const fb = entry.feedback || {};
+    const opt = (field, value, label) =>
+      `<button type="button" class="seg-btn ${fb[field] === value ? 'active' : ''}" data-fb-field="${field}" data-fb-value="${value}">${esc(label)}</button>`;
+    const row = (label, field, opts) =>
+      `<div class="fb-row"><span class="fb-label">${esc(label)}</span><div class="seg-lang">${opts.map(([v, l]) => opt(field, v, l)).join('')}</div></div>`;
+    const used = entry.feedbackUsed ? `<p class="muted fb-used">🧠 ${esc(t('Cette analyse a tenu compte de {n} retour(s) précédent(s).', { n: entry.feedbackUsed }))}</p>` : '';
+    return `
+      <div class="fb-card" id="fb-card">
+        <h3>📝 ${esc(t('Votre avis sur cette analyse'))}</h3>
+        <p class="muted">${esc(t('Vos retours sont résumés pour l’IA dans les prochaines analyses, afin de les améliorer.'))}</p>
+        ${used}
+        ${row(t('Analyse'), 'rating', [['good', '👍 ' + t('Bonne')], ['bad', '👎 ' + t('Mauvaise')]])}
+        ${row(t('Entrée'), 'entry', [['good', '✓ ' + t('Bonne')], ['early', t('Trop tôt')], ['late', t('Trop tard')]])}
+        ${row('Stop loss', 'sl', [['good', '✓ ' + t('Bon')], ['tight', t('Trop serré')], ['wide', t('Trop large')]])}
+        ${row('Take profits', 'tp', [['good', '✓ ' + t('Bons')], ['far', t('Trop loin')], ['close', t('Trop proches')]])}
+        ${row(t('Résultat'), 'outcome', [['tp', '🎯 ' + t('TP touché')], ['sl', '🛑 ' + t('SL touché')], ['be', '➖ Break-even'], ['none', '⏸ ' + t('Non déclenché')]])}
+        <textarea id="fb-comment" rows="2" maxlength="500" placeholder="${esc(t('Commentaire (facultatif) — ex. : SL touché par une mèche juste avant la hausse'))}">${esc(fb.comment || '')}</textarea>
+        <div class="fb-foot">
+          <button type="button" class="btn btn-sm" id="fb-save">💾 ${esc(t('Enregistrer le commentaire'))}</button>
+          <span class="muted">${fb.at ? esc(t('Retour enregistré le {date}', { date: new Date(fb.at).toLocaleString(LOCALE) })) : ''}</span>
+        </div>
+      </div>`;
+  },
+
+  async saveFeedback(patch) {
+    const entry = APP.currentAnalysis;
+    if (!entry || !entry.id) return;
+    const body = { ...(entry.feedback || {}), comment: ($('#fb-comment') && $('#fb-comment').value) || '', ...patch };
+    try {
+      const updated = await api(`/api/analyses/${encodeURIComponent(entry.id)}/feedback`, { method: 'PUT', body: JSON.stringify(body) });
+      if (APP.currentAnalysis && APP.currentAnalysis.id === entry.id) {
+        const y = window.scrollY;
+        AnalyzeMgr.showResult(updated);
+        window.scrollTo(0, y);
+      }
+      AnalyzeMgr.refreshHistory();
+      return true;
+    } catch (err) { toast(err.message, 'err'); return false; }
   },
 
   /* ---------- Historique ---------- */
@@ -241,7 +284,10 @@ window.AnalyzeMgr = {
       APP.analyses = await api('/api/analyses');
     } catch { return; }
     const list = $('#history-list');
-    $('#history-count').textContent = APP.analyses.length ? t('{n} analyse(s)', { n: APP.analyses.length }) : '';
+    const good = APP.analyses.filter(a => a.feedback && a.feedback.rating === 'good').length;
+    const bad = APP.analyses.filter(a => a.feedback && a.feedback.rating === 'bad').length;
+    $('#history-count').textContent = APP.analyses.length
+      ? t('{n} analyse(s)', { n: APP.analyses.length }) + (good + bad ? ` · 👍 ${good} · 👎 ${bad}` : '') : '';
     if (!APP.analyses.length) {
       list.innerHTML = `<p class="muted">${esc(t('Aucune analyse enregistrée.'))}</p>`;
       return;
@@ -258,6 +304,7 @@ window.AnalyzeMgr = {
               ${a.params?.timeframe ? `<span class="muted">· ${esc(a.params.timeframe)}</span>` : ''}</div>
             <div class="hist-date">${new Date(a.date).toLocaleString(LOCALE)}</div>
           </div>
+          ${a.feedback && a.feedback.rating ? `<span class="fb-mark" title="${esc(a.feedback.rating === 'good' ? t('Jugée bonne') : t('Jugée mauvaise'))}">${a.feedback.rating === 'good' ? '👍' : '👎'}</span>` : ''}
           <span class="hist-bias ${biasCls}">${a.result ? esc(biasLabel(biasCls)) : esc(t('ÉCHEC'))}</span>
           <button class="hist-del" data-jour="${esc(a.id)}" title="${esc(t('Journaliser ce plan'))}">📓</button>
           <button class="hist-del" data-del="${esc(a.id)}" title="${esc(t('Supprimer'))}">🗑️</button>
@@ -455,6 +502,18 @@ $('#result-body').addEventListener('click', async e => {
   }
   if (e.target.closest('#btn-copyplan')) {
     await copyPlanMarkdown(APP.currentView || APP.currentAnalysis);
+  }
+  const fbBtn = e.target.closest('[data-fb-field]');
+  if (fbBtn) {
+    const field = fbBtn.dataset.fbField, value = fbBtn.dataset.fbValue;
+    const cur = APP.currentAnalysis && APP.currentAnalysis.feedback && APP.currentAnalysis.feedback[field];
+    // un second clic sur le choix actif l'annule
+    await AnalyzeMgr.saveFeedback({ [field]: cur === value ? null : value }); // la carte affiche « Retour enregistré le … »
+    return;
+  }
+  if (e.target.closest('#fb-save')) {
+    if (await AnalyzeMgr.saveFeedback({})) toast(t('Commentaire enregistré ✓'), 'ok');
+    return;
   }
   const langBtn = e.target.closest('[data-view-lang]');
   if (langBtn && !langBtn.classList.contains('active')) {

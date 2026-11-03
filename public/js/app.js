@@ -108,6 +108,8 @@ function fillSettingsForm() {
   $('#st-maxloss').value = s.maxLossesConsecutive ?? 2;
   $('#st-interval').value = s.alertsIntervalSec ?? 30;
   $('#st-news').checked = !!s.useNewsContext;
+  $('#st-feedback').checked = s.useFeedback !== false;
+  $('#st-backup-ai').checked = s.useBackupAI !== false;
   $('#st-key').value = '';
   $('#st-key-hint').textContent = s.hasKey ? t('Clé enregistrée : {key}', { key: s.apiKeyMasked }) : t('Aucune clé enregistrée.');
   updateProviderUi();
@@ -174,7 +176,9 @@ $('#st-save').addEventListener('click', async () => {
       maxLossesConsecutive: Math.max(1, parseInt($('#st-maxloss').value) || 2),
       providers: collectProviders(),
       alertsIntervalSec: Math.min(600, Math.max(15, parseInt($('#st-interval').value) || 30)),
-      useNewsContext: $('#st-news').checked
+      useNewsContext: $('#st-news').checked,
+      useFeedback: $('#st-feedback').checked,
+      useBackupAI: $('#st-backup-ai').checked
     }
   };
   const key = $('#st-key').value.trim();

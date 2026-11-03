@@ -56,6 +56,10 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
   const trRes = await fetch(base + '/api/analyses/inconnu/translate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{"lang":"en"}' });
   assert.strictEqual(trRes.status, 404);
 
+  // retour sur une analyse : analyse inconnue → 404
+  const fbRes = await fetch(base + '/api/analyses/inconnu/feedback', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: '{"rating":"good"}' });
+  assert.strictEqual(fbRes.status, 404);
+
   // Google Sheets : seules les URL Apps Script sont acceptées, jeton absent de /api/config
   const gs = await fetch(base + '/api/sheets/connect', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: 'https://evil.example/exec' }) });
   assert.strictEqual(gs.status, 400);

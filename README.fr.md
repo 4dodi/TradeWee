@@ -65,6 +65,18 @@ L'IA rédige les nouvelles analyses dans la langue choisie. Chaque analyse enreg
 
 La clé est stockée uniquement en local dans `data/config.json` (fichier exclu de Git).
 
+## Des retours qui améliorent les analyses suivantes
+
+Chaque analyse enregistrée a une carte **📝 Votre avis** : notez l'analyse (👍/👎), l'entrée (bonne / trop tôt / trop tard), le stop loss (bon / trop serré / trop large), les take profits (bons / trop loin / trop proches), le résultat (TP touché / SL touché / break-even / non déclenché) et ajoutez un commentaire. Chaque clic est enregistré ; recliquer sur le choix actif l'annule.
+
+Avant chaque nouvelle analyse, Tradewee résume pour l'IA vos 40 dernières analyses notées — au global, pour le même actif, avec vos derniers commentaires — et lui demande d'ajuster (par ex. placer le stop au-delà de la structure la plus proche si les stops étaient souvent trop serrés). Le résultat indique combien de retours ont été pris en compte. Désactivable dans **⚙️ Réglages → Alertes & contexte**.
+
+## Fiabilité : fournisseurs IA surchargés
+
+- **Gemini** : Tradewee demande aux modèles Gemini récents (qui « réfléchissent ») un effort de raisonnement faible (`reasoning_effort: low`), ce qui rend l'analyse de graphiques bien plus rapide et beaucoup moins souvent refusée pour surcharge (503). Il patiente quelques secondes avant de réessayer un modèle occupé, puis essaie les autres modèles de votre clé.
+- **IA de secours** : si l'IA principale échoue malgré tout, Tradewee essaie vos **IA supplémentaires** (Réglages, celles qui ont une clé API), dans l'ordre, et le résultat indique laquelle a fait l'analyse. L'IA de secours doit accepter les images. Désactivable : *Si l'IA principale échoue, utiliser mes IA supplémentaires en secours*.
+- Les messages d'erreur indiquent maintenant la raison donnée par le fournisseur pour chaque modèle essayé (ex. `503 The model is overloaded`).
+
 ## TradingView
 
 ### Tracer vos plans sur votre graphique TradingView

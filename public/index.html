@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tradewee — Analyse de charts</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📈</text></svg>">
-  <link rel="stylesheet" href="css/style.css?v=17">
+  <link rel="stylesheet" href="css/style.css?v=18">
 </head>
 <body>
   <div class="layout">
@@ -361,6 +361,7 @@
             <p class="field-hint">Jusqu'à 4 autres IA (compatible OpenAI) qui analyseront la même capture quand « ⚖️ Comparer » est coché. Clés optionnelles pour les fournisseurs sans clé (ex. GitHub Models).</p>
             <div id="st-providers"></div>
             <button class="btn btn-ghost" id="st-add-provider" type="button">➕ Ajouter une IA</button>
+            <label class="check" style="margin-top:10px"><input type="checkbox" id="st-backup-ai"> Si l’IA principale échoue, utiliser mes IA supplémentaires en secours</label>
           </div>
 
           <div class="card">
@@ -383,6 +384,7 @@
               <div class="field"><label for="st-interval">Rafraîchissement alertes (s)</label><input id="st-interval" type="number" min="15" max="600"></div>
             </div>
             <label class="check"><input type="checkbox" id="st-news"> Injecter les news récentes dans l'analyse (volet fondamental)</label>
+            <label class="check"><input type="checkbox" id="st-feedback"> Tenir compte de mes retours (👍/👎, entrée, SL, TP) pour améliorer les analyses</label>
           </div>
         </div>
 
@@ -473,12 +475,12 @@
   <div id="modal-overlay" hidden>
     <div class="modal" id="modal-box"></div>
   </div>
-  <script src="js/i18n.js?v=6"></script>
+  <script src="js/i18n.js?v=7"></script>
   <script src="js/util.js?v=16"></script>
   <script src="js/symbols.js?v=1"></script>
-  <script src="js/app.js?v=16"></script>
+  <script src="js/app.js?v=17"></script>
   <script src="js/assets.js?v=17"></script>
-  <script src="js/analyze.js?v=19"></script>
+  <script src="js/analyze.js?v=20"></script>
   <script src="js/calendar.js?v=15"></script>
   <script src="js/alerts.js?v=16"></script>
   <script src="js/journal.js?v=16"></script>

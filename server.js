@@ -55,6 +55,8 @@ const DEFAULT_CONFIG = {
     maxTradesPerDay: 3,
     maxTradesPerWeek: 10,
     maxLossesConsecutive: 2,
+    useBackupAI: true,      // si l'IA principale échoue, essayer les IA supplémentaires
+    useFeedback: true,      // tenir compte de vos retours sur les analyses précédentes
     alertsIntervalSec: 30,
     useNewsContext: true,
     webhookEnabled: false, // alertes TradingView → analyse automatique
@@ -534,7 +536,7 @@ app.get('/api/config', (req, res) => {
 app.put('/api/config', (req, res) => {
   const s = req.body && req.body.settings;
   if (!s) return res.status(400).json({ error: 'Corps de requête invalide.' });
-  const allowed = ['provider', 'baseUrl', 'model', 'balance', 'riskPercent', 'blackoutMinutes', 'maxTradesPerDay', 'maxTradesPerWeek', 'maxLossesConsecutive', 'alertsIntervalSec', 'useNewsContext', 'providers'];
+  const allowed = ['provider', 'baseUrl', 'model', 'balance', 'riskPercent', 'blackoutMinutes', 'maxTradesPerDay', 'maxTradesPerWeek', 'maxLossesConsecutive', 'alertsIntervalSec', 'useNewsContext', 'useBackupAI', 'useFeedback', 'providers'];
   for (const k of allowed) {
     if (s[k] !== undefined) config.settings[k] = s[k];
   }
@@ -606,12 +608,33 @@ app.delete('/api/assets/:id', (req, res) => {
 });
 
 // Appelle /chat/completions avec un modèle donné.
-function chatCall(url, key, mdl, payload, ms) {
-  return fetchWithTimeout(`${url}/chat/completions`, {
+// Gemini : les modèles « flash » récents réfléchissent longuement par défaut, ce qui rend
+// l'analyse d'images lente et souvent refusée en période de forte demande (503) ;
+// reasoning_effort « low » réduit fortement ce temps. S'il est refusé, on réessaie sans.
+const isGeminiUrl = (url) => /generativelanguage\.googleapis\.com/i.test(String(url));
+async function chatCall(url, key, mdl, payload, ms) {
+  const send = (body) => fetchWithTimeout(`${url}/chat/completions`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
-    body: JSON.stringify({ ...payload, model: mdl })
+    body: JSON.stringify(body)
   }, ms).then(async r => ({ r, j: await r.json().catch(() => null) }));
+  const body = { ...payload, model: mdl };
+  const injected = isGeminiUrl(url) && body.reasoning_effort === undefined;
+  if (injected) body.reasoning_effort = 'low';
+  const out = await send(body);
+  if (injected && out.r.status === 400 && /reasoning|thinking/i.test(extractApiError(out.j, 400))) {
+    delete body.reasoning_effort;
+    return send(body);
+  }
+  return out;
+}
+
+// Raison courte d'un échec, affichée à l'utilisateur (« 503 The model is overloaded… »)
+function shortReason(out) {
+  if (!out || !out.r) return '?';
+  const msg = extractApiError(out.j, out.r.status).replace(/\s+/g, ' ').trim();
+  const txt = /^HTTP \d+$/.test(msg) ? msg : (out.r.status === 504 && !/^\d/.test(msg) ? msg : `${out.r.status} ${msg}`);
+  return txt.length > 110 ? txt.slice(0, 107) + '…' : txt;
 }
 
 // Un appel, avec quelques reprises si le fournisseur est momentanément surchargé.
@@ -627,13 +650,14 @@ async function attemptModel(url, key, model, payload, ms, maxAttempts = 2, deadl
       out = simulated(e.name === 'AbortError'
         ? `Aucune réponse du fournisseur en ${Math.round(ms / 1000)} s`
         : `Connexion impossible : ${e.message}`);
-      if (i < maxAttempts - 1) { await sleep(700 * (i + 1)); continue; }
+      if (i < maxAttempts - 1) { await sleep(2500 * (i + 1)); continue; }
       return { out, state: 'transient' };
     }
     if (out.r.ok) return { out, state: 'ok' };
     const err = extractApiError(out.j, out.r.status);
     if (isTransientError(out.r.status, err)) {
-      if (i < maxAttempts - 1) { await sleep(700 * (i + 1)); continue; }
+      // surcharge passagère : laisser quelques secondes au fournisseur avant de réessayer
+      if (i < maxAttempts - 1) { await sleep(2500 * (i + 1)); continue; }
       return { out, state: 'transient' };
     }
     if (isModelNotFound(out.r.status, err) || isQuotaError(out.r.status, err)) return { out, state: 'fallback' };
@@ -647,10 +671,13 @@ async function attemptModel(url, key, model, payload, ms, maxAttempts = 2, deadl
 async function chatWithFallback(url, key, mdl, payload, ms, budgetMs = 120000) {
   const deadline = Date.now() + budgetMs;
   const tried = [];
+  const reasons = []; // « modèle (raison) » pour chaque modèle essayé
   let firstState = null;
-  const attempt = (model) => {
+  const attempt = async (model) => {
     tried.push(model);
-    return attemptModel(url, key, model, payload, ms, 2, deadline);
+    const res = await attemptModel(url, key, model, payload, ms, 2, deadline);
+    if (res.state !== 'ok') reasons.push(`${model} (${shortReason(res.out)})`);
+    return res;
   };
 
   if (mdl) {
@@ -686,13 +713,13 @@ async function chatWithFallback(url, key, mdl, payload, ms, budgetMs = 120000) {
     if (lastState === 'fallback' && isQuotaError(last.r.status, err)) {
       return {
         ...last,
-        error: `Quota gratuit épuisé sur les modèles testés (${tried.join(', ')}). Réessayez plus tard, ou choisissez un autre fournisseur (OpenRouter « :free », Mistral, GitHub Models).`
+        error: `Quota gratuit épuisé sur les modèles testés (${reasons.join(', ')}). Réessayez plus tard, ou choisissez un autre fournisseur (OpenRouter « :free », Mistral, GitHub Models).`
       };
     }
     if (lastState === 'transient') {
       return {
         ...last,
-        error: `Aucun modèle n’a répondu (surcharge ou délai dépassé) chez ${url.replace(/^https?:\/\//, '').split('/')[0]}. Modèles essayés : ${tried.join(', ')}. Patientez une à deux minutes, ou basculez sur un autre fournisseur.`
+        error: `Aucun modèle n’a répondu (surcharge ou délai dépassé) chez ${url.replace(/^https?:\/\//, '').split('/')[0]}. Modèles essayés : ${reasons.join(', ')}. Patientez une à deux minutes, ou basculez sur un autre fournisseur.`
       };
     }
     return last;
@@ -713,13 +740,13 @@ app.post('/api/test-connection', async (req, res) => {
     const configured = body.model || s.model;
     const mdl = resolveModel(url, configured);
     const out = await chatWithFallback(url, key, mdl,
-      { messages: [{ role: 'user', content: req.lang === 'en' ? 'Reply only: OK' : 'Réponds uniquement: OK' }], max_tokens: 10 }, 20000, 70000);
+      { messages: [{ role: 'user', content: req.lang === 'en' ? 'Reply only: OK' : 'Réponds uniquement: OK' }], max_tokens: 64 }, 30000, 90000);
     if (out.error) return res.status(400).json({ ok: false, error: out.error });
     if (!out.r.ok) {
       const msg = extractApiError(out.j, out.r.status);
       return res.status(out.r.status).json({ ok: false, error: `Erreur API (${out.r.status}) : ${msg}` });
     }
-    const reply = (out.j && out.j.choices && out.j.choices[0] && out.j.choices[0].message && out.j.choices[0].message.content || '').trim();
+    const reply = (out.j && out.j.choices && out.j.choices[0] && out.j.choices[0].message && out.j.choices[0].message.content || '').trim() || 'OK';
     res.json({
       ok: true,
       model: out.model,
@@ -828,6 +855,53 @@ function enforceCoherence(result, settings) {
  *   (et des bougies récentes pour les cryptos).
  * Retourne { status, body } (body = réponse JSON à renvoyer).
  */
+// ---------------------------------------------------------------------------
+// Retours de l'utilisateur sur les analyses : stockés sur chaque analyse
+// (feedback) puis résumés dans le prompt des analyses suivantes pour les calibrer.
+// ---------------------------------------------------------------------------
+const FEEDBACK_ENUMS = {
+  rating: ['good', 'bad'],
+  entry: ['good', 'early', 'late'],
+  sl: ['good', 'tight', 'wide'],
+  tp: ['good', 'far', 'close'],
+  outcome: ['tp', 'sl', 'be', 'none']
+};
+const normAsset = (s) => String(s || '').toUpperCase().split(':').pop().replace(/[^A-Z0-9]/g, '').replace(/USDT$|USDC$/, 'USD');
+
+function buildFeedbackBlock(asset, lang) {
+  const rated = loadAnalyses().filter(a => a.feedback && a.result).slice(0, 40); // les 40 plus récentes
+  if (!rated.length) return { text: '', count: 0 };
+  const en = lang === 'en';
+  const L = en
+    ? { good: 'good', bad: 'bad', early: 'too early', late: 'too late', tight: 'too tight', wide: 'too wide', far: 'too far', close: 'too close', tp: 'TP hit', sl: 'SL hit', be: 'break-even', none: 'not triggered' }
+    : { good: 'bon', bad: 'mauvais', early: 'trop tôt', late: 'trop tard', tight: 'trop serré', wide: 'trop large', far: 'trop loin', close: 'trop proche', tp: 'TP touché', sl: 'SL touché', be: 'break-even', none: 'non déclenché' };
+  const tally = (list, field) => {
+    const c = {};
+    for (const a of list) { const v = a.feedback[field]; if (v) c[v] = (c[v] || 0) + 1; }
+    return Object.entries(c).sort((x, y) => y[1] - x[1]).map(([k, n]) => `${L[k] || k} ×${n}`).join(', ');
+  };
+  const summary = (list) => [
+    ['rating', en ? 'Overall' : 'Global'], ['entry', en ? 'Entry' : 'Entrée'], ['sl', 'Stop loss'],
+    ['tp', 'Take profits'], ['outcome', en ? 'Outcome' : 'Résultat']
+  ].map(([f, label]) => { const t = tally(list, f); return t ? `${label}: ${t}` : null; }).filter(Boolean).join(' · ');
+
+  const target = normAsset(asset);
+  const same = target ? rated.filter(a => normAsset((a.result && a.result.actif) || (a.params && a.params.asset)) === target) : [];
+  const comments = [...same, ...rated.filter(a => !same.includes(a))]
+    .filter(a => a.feedback.comment).slice(0, 5)
+    .map(a => `- "${String(a.feedback.comment).replace(/\s+/g, ' ').replace(/"/g, "'").slice(0, 200)}" (${(a.result && a.result.actif) || '?'} ${(a.result && a.result.uniteDeTemps) || (a.params && a.params.timeframe) || ''}, ${String(a.date).slice(0, 10)})`);
+
+  let text = en
+    ? `\n\nUSER FEEDBACK ON YOUR PREVIOUS ANALYSES (${rated.length} rated) — use it to calibrate this plan:\n- All assets: ${summary(rated)}`
+    : `\n\nRETOURS DE L'UTILISATEUR SUR TES ANALYSES PRÉCÉDENTES (${rated.length} notées) — utilise-les pour calibrer ce plan :\n- Tous actifs : ${summary(rated)}`;
+  if (same.length) text += `\n- ${en ? `On ${target}` : `Sur ${target}`} (${same.length}): ${summary(same)}`;
+  if (comments.length) text += `\n${en ? 'Recent user comments:' : 'Commentaires récents de l’utilisateur :'}\n${comments.join('\n')}`;
+  text += en
+    ? `\nAdjust accordingly: if stops were often too tight, place the SL beyond the nearest structure/liquidity; if too wide, tighten it. If entries were often too early, wait for confirmation; if too late, consider earlier limit entries. If take profits were often too far, use closer, more conservative targets; if too close, let winners run further. Learn from the outcomes and comments, without overfitting to a single trade.`
+    : `\nAjuste en conséquence : si les stops étaient souvent trop serrés, place le SL au-delà de la structure/liquidité la plus proche ; s'ils étaient trop larges, resserre-le. Si les entrées étaient souvent trop tôt, attends une confirmation ; trop tard, envisage des entrées limites plus précoces. Si les TP étaient souvent trop loin, choisis des objectifs plus prudents ; trop proches, laisse courir davantage. Tire les leçons des résultats et commentaires, sans sur-réagir à un seul trade.`;
+  return { text, count: rated.length };
+}
+
 async function runAnalysis({ images = [], asset, timeframe, notes, direction, compare = false, lang = 'en', source = 'upload', alertBlock = '' }) {
   const { baseUrl, apiKey, useNewsContext, balance, riskPercent } = config.settings;
   const model = resolveModel(baseUrl, config.settings.model);
@@ -864,6 +938,16 @@ async function runAnalysis({ images = [], asset, timeframe, notes, direction, co
         highImpact.map(e => `- [${fmtIn(e.minutesUntil)}] ${e.title} (${e.country})`).join('\n');
     }
   } catch { /* pas bloquant */ }
+
+  // retours de l'utilisateur sur les analyses précédentes (si activé)
+  let feedbackUsed = 0;
+  if (config.settings.useFeedback !== false) {
+    try {
+      const fb = buildFeedbackBlock(asset, lang);
+      macroBlock += fb.text;
+      feedbackUsed = fb.count;
+    } catch { /* pas bloquant */ }
+  }
 
   const en = lang === 'en';
   const dirEn = { achat: 'BUY', vente: 'SELL' };
@@ -940,19 +1024,35 @@ Rappel : réponds uniquement par le JSON au schéma demandé, en français.`;
       : { name: '?', error: `Échec : ${r.reason && r.reason.message || 'inconnu'}` }));
   }
 
-  let aiRaw, usage = null, modelUsed = model;
+  let aiRaw, usage = null, modelUsed = model, backupUsed = null;
   try {
-    const out = await chatWithFallback(url, apiKey, model, payload, 120000, 240000);
-    if (out.error) return { status: 400, body: { error: out.error } };
-    if (!out.r.ok) {
-      const msg = extractApiError(out.j, out.r.status);
-      return { status: out.r.status === 401 || out.r.status === 403 ? 401 : 502, body: { error: `Erreur API (${out.r.status}) : ${msg}` } };
+    let out = await chatWithFallback(url, apiKey, model, payload, 120000, 240000);
+    const failure = (o) => o.error
+      ? { status: 400, error: o.error }
+      : !o.r.ok ? { status: o.r.status === 401 || o.r.status === 403 ? 401 : 502, error: `Erreur API (${o.r.status}) : ${extractApiError(o.j, o.r.status)}` }
+      : null;
+    const mainFail = failure(out);
+    if (mainFail) {
+      // IA de secours : les IA supplémentaires des Réglages (avec une clé), dans l'ordre
+      const backupErrors = [];
+      if (config.settings.useBackupAI !== false) {
+        for (const p of extraProviders) {
+          const pUrl = p.baseUrl.replace(/\/+$/, '');
+          const o2 = await chatWithFallback(pUrl, p.apiKey, resolveModel(pUrl, p.model) || undefined, payload, 120000, 150000);
+          const f2 = failure(o2);
+          if (!f2) { out = o2; backupUsed = p.name; break; }
+          backupErrors.push(`${p.name} : ${f2.error}`);
+        }
+      }
+      if (!backupUsed) {
+        return { status: mainFail.status, body: { error: mainFail.error + (backupErrors.length ? ` — IA de secours : ${backupErrors.join(' ; ')}` : '') } };
+      }
     }
     aiRaw = (out.j && out.j.choices && out.j.choices[0] && out.j.choices[0].message && out.j.choices[0].message.content) || '';
     usage = (out.j && out.j.usage) || null;
     if (out.r.ok && !aiRaw) return { status: 502, body: { error: 'Réponse vide ou illisible du fournisseur IA. Réessayez.' } };
-    modelUsed = out.model;
-    if (out.discovered) {
+    modelUsed = backupUsed ? `${backupUsed} · ${out.model}` : out.model;
+    if (out.discovered && !backupUsed) {
       // mémorise le modèle valide pour les prochaines analyses
       config.settings.model = out.model;
       saveConfig();
@@ -963,6 +1063,10 @@ Rappel : réponds uniquement par le JSON au schéma demandé, en français.`;
   }
 
   const parsed = extractJson(aiRaw);
+  if (parsed && backupUsed) {
+    const note = `IA principale indisponible : analyse réalisée par l’IA de secours « ${backupUsed} ».`;
+    parsed.avertissements = Array.isArray(parsed.avertissements) ? [note, ...parsed.avertissements] : [note];
+  }
   const coh = parsed ? enforceCoherence(parsed, config.settings) : { fixes: [], ratiosParTP: [] };
   const coherenceFixes = coh.fixes;
 
@@ -1043,6 +1147,7 @@ Rappel : réponds uniquement par le JSON au schéma demandé, en français.`;
     date: new Date().toISOString(),
     model: modelUsed,
     lang: lang === 'fr' ? 'fr' : 'en', // langue du texte rédigé par l'IA
+    feedbackUsed, // nombre de retours utilisateur pris en compte
     params: { asset: asset || null, timeframe: timeframe || null, notes: notes || '', direction: direction || 'aucun', source },
     images: savedFiles,
     result: parsed,
@@ -1135,6 +1240,27 @@ function mergeTranslation(orig, tr) {
   }
   return out;
 }
+
+app.put('/api/analyses/:id/feedback', (req, res) => {
+  const list = loadAnalyses();
+  const e = list.find(a => a.id === req.params.id);
+  if (!e) return res.status(404).json({ error: 'Analyse introuvable.' });
+  const b = req.body || {};
+  const fb = {};
+  for (const [field, allowed] of Object.entries(FEEDBACK_ENUMS)) {
+    if (allowed.includes(b[field])) fb[field] = b[field];
+  }
+  const comment = String(b.comment || '').trim().slice(0, 500);
+  if (comment) fb.comment = comment;
+  if (Object.keys(fb).length) {
+    fb.at = new Date().toISOString();
+    e.feedback = fb;
+  } else {
+    delete e.feedback; // tout désélectionné : retour supprimé
+  }
+  saveJson(ANALYSES_FILE, list);
+  res.json(e);
+});
 
 const translating = new Map(); // évite deux traductions simultanées de la même analyse
 

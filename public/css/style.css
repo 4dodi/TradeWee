@@ -522,3 +522,13 @@ code { background: var(--bg); padding: 1px 5px; border-radius: 5px; font-size: 1
 .as-suggest { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 4px 0 14px; font-size: 12.5px; }
 .as-suggest .muted { margin-right: 4px; }
 .chip-btn.sugg { font-family: inherit; }
+/* ---- Retour utilisateur sur une analyse ---- */
+.fb-card { margin-top: 18px; padding: 14px 16px; border: 1px solid var(--border); border-radius: 12px; background: var(--card-2); }
+.fb-card h3 { margin: 0 0 4px; font-size: 15px; }
+.fb-card > .muted { font-size: 12.5px; margin: 0 0 10px; }
+.fb-used { color: var(--accent) !important; }
+.fb-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 8px; }
+.fb-label { min-width: 110px; font-size: 13px; font-weight: 600; }
+#fb-comment { width: 100%; margin-top: 4px; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font-family: inherit; font-size: 13px; resize: vertical; }
+.fb-foot { display: flex; align-items: center; gap: 12px; margin-top: 8px; font-size: 12.5px; }
+.fb-mark { font-size: 14px; }

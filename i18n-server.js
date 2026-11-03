@@ -10,6 +10,8 @@
 // Dans le remplacement, $1, $2… reprennent les parties variables ; celles
 // marquées par « ~ » (ex. ~1) sont elles-mêmes retraduites (messages imbriqués).
 const PATTERNS = [
+  // erreur principale + erreurs des IA de secours : chaque partie est retraduite
+  [/^(.*) — IA de secours : (.*)$/s, '~1 — Backup AI: ~2'],
   [/^URL de base ou clé API manquante\.$/, 'Missing API base URL or API key.'],
   [/^Le fournisseur ne renvoie aucun modèle\.$/, 'The provider returned no models.'],
   [/^Connexion impossible : (.*)$/s, 'Connection failed: ~1'],
@@ -87,6 +89,8 @@ const PATTERNS = [
   [/^Rien à traduire : cette analyse n’a pas de plan\.$/, 'Nothing to translate: this analysis has no plan.'],
   [/^Traduction impossible : (.*)$/s, 'Translation failed: ~1'],
   [/^Réponse de traduction illisible\. Réessayez\.$/, 'Unreadable translation response. Try again.'],
+  // IA de secours
+  [/^IA principale indisponible : analyse réalisée par l’IA de secours « (.*) »\.$/s, 'Main AI unavailable: this analysis was made by the backup AI “$1”.'],
   // Google Sheets
   [/^Google Sheets n’est pas connecté \(Réglages\)\.$/, 'Google Sheets is not connected (Settings).'],
   [/^Rien à enregistrer : cette analyse n’a pas de plan\.$/, 'Nothing to save: this analysis has no plan.'],
@@ -103,17 +107,29 @@ const PATTERNS = [
   [/^TradingView → (.*)$/s, 'TradingView → ~1']
 ];
 
+// Fragments qui peuvent apparaître au milieu d'un message composé (liste de modèles, IA de secours…)
+const FRAGMENTS = [
+  [/Aucune réponse du fournisseur en (\d+) s/g, 'No response from the provider within $1 s'],
+  [/Erreur API \((\d+)\) : /g, 'API error ($1): '],
+  [/Connexion impossible : /g, 'Connection failed: '],
+  [/Délai total dépassé/g, 'Total time limit exceeded'],
+  [/Délai dépassé/g, 'Timed out']
+];
+
 function toEnglish(str) {
   if (typeof str !== 'string' || !str) return str;
+  let res = str;
   for (const [re, out] of PATTERNS) {
     const m = str.match(re);
     if (!m) continue;
-    return out.replace(/([~$])(\d)/g, (_, kind, i) => {
+    res = out.replace(/([~$])(\d)/g, (_, kind, i) => {
       const part = m[Number(i)] ?? '';
       return kind === '~' ? toEnglish(part) : part;
     });
+    break;
   }
-  return str;
+  for (const [re, out] of FRAGMENTS) res = res.replace(re, out);
+  return res;
 }
 
 // « raw » : seuls les messages d'échec du serveur correspondent à un motif ; une réponse brute de l'IA reste intacte
