@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tradewee — Analyse de charts</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📈</text></svg>">
-  <link rel="stylesheet" href="css/style.css?v=18">
+  <link rel="stylesheet" href="css/style.css?v=19">
 </head>
 <body>
   <div class="layout">
@@ -25,6 +25,7 @@
         <button class="nav-btn" data-tab="alerts">🔔 <span>Alertes</span><em class="tab-badge" id="badge-alerts" hidden></em></button>
         <button class="nav-btn" data-tab="journal">📓 <span>Journal</span></button>
         <button class="nav-btn" data-tab="market">📈 <span>Marché</span></button>
+        <button class="nav-btn" data-tab="profile">🧠 <span>Profil</span></button>
         <button class="nav-btn" data-tab="settings">⚙️ <span>Réglages</span></button>
       </nav>
       <div class="sidebar-foot">
@@ -308,6 +309,27 @@
       </section>
 
       <!-- ============ ONGLET RÉGLAGES ============ -->
+      <section class="tab-panel" id="tab-profile">
+        <header class="page-head">
+          <h1>Profil du trader</h1>
+          <p class="page-sub">Vos consignes personnelles (stratégie, règles, setups) sont envoyées à l’IA à chaque analyse. Ajoutez, modifiez, désactivez ou supprimez des consignes.</p>
+        </header>
+        <div class="card">
+          <div class="pf-toolbar">
+            <label class="check"><input type="checkbox" id="pf-enabled"> Utiliser mon profil dans les analyses</label>
+            <span class="muted" id="pf-stats"></span>
+            <span class="spacer"></span>
+            <button type="button" class="btn btn-ghost" id="pf-import">📥 Importer un texte</button>
+            <button type="button" class="btn btn-ghost" id="pf-export">📋 Copier tout</button>
+            <button type="button" class="btn btn-ghost" id="pf-preview">👁 Aperçu pour l’IA</button>
+            <button type="button" class="btn btn-primary" id="pf-save">💾 Enregistrer</button>
+          </div>
+          <p class="field-hint">Champ « Actifs » : limitez une consigne à certains actifs (ex. vos niveaux clés BTC → BTCUSD). Vide = tous les actifs. Le profil est stocké uniquement sur votre ordinateur (data/profile.json).</p>
+          <div id="pf-blocks"></div>
+          <button type="button" class="btn btn-ghost" id="pf-add">➕ Ajouter une consigne</button>
+        </div>
+      </section>
+
       <section class="tab-panel" id="tab-settings">
         <header class="page-head">
           <h1>Réglages</h1>
@@ -475,17 +497,18 @@
   <div id="modal-overlay" hidden>
     <div class="modal" id="modal-box"></div>
   </div>
-  <script src="js/i18n.js?v=7"></script>
+  <script src="js/i18n.js?v=8"></script>
   <script src="js/util.js?v=16"></script>
   <script src="js/symbols.js?v=1"></script>
-  <script src="js/app.js?v=17"></script>
+  <script src="js/app.js?v=18"></script>
   <script src="js/assets.js?v=17"></script>
-  <script src="js/analyze.js?v=20"></script>
+  <script src="js/analyze.js?v=21"></script>
   <script src="js/calendar.js?v=15"></script>
   <script src="js/alerts.js?v=16"></script>
   <script src="js/journal.js?v=16"></script>
   <script src="js/market.js?v=18"></script>
   <script src="js/tradingview.js?v=2"></script>
   <script src="js/sheets.js?v=1"></script>
+  <script src="js/profile.js?v=1"></script>
 </body>
 </html>

@@ -65,6 +65,16 @@ The AI writes new analyses in the selected language. Every saved analysis also h
 
 The key is stored only on your machine, in `data/config.json` (excluded from Git).
 
+## Trader profile (your instructions for the AI)
+
+The **🧠 Profile** tab holds your personal instructions — strategy, risk rules, key levels, preferred setups, reasoning process — as separate blocks sent to the AI with every analysis (screenshots and TradingView alerts).
+
+- **Import text**: paste your instructions (Markdown); they are split into one block per `##` / `###` heading, sub-headings keeping their parent title. A heading like *Key levels to watch (BTC/USD)* is automatically limited to `BTCUSD`.
+- Each block can be **edited, turned off, reordered or deleted**; **➕ Add an instruction** creates a new one. The **Assets** field limits a block to some symbols (`BTCUSD`, or `EURUSD, GBPUSD`); empty = all assets.
+- **👁 Preview for the AI** shows exactly what the AI receives for a given asset; **📋 Copy all** exports the profile as text.
+- The app's output format always wins over presentation requests in the profile: a "WAIT / no trade" answer becomes a NEUTRAL bias, reminders go to the warnings, scenarios to the technical analysis.
+- The profile is stored only on your computer, in `data/profile.json` (excluded from Git). Each result says how many instructions and feedbacks it used.
+
 ## Feedback that improves future analyses
 
 Every saved analysis has a **📝 Your feedback** card: rate the analysis (👍/👎), the entry (good / too early / too late), the stop loss (good / too tight / too wide), the take profits (good / too far / too close), the result (TP hit / SL hit / break-even / not triggered), and add a comment. Each click is saved; clicking the active choice again removes it.
@@ -159,6 +169,7 @@ To use it online, deploy the GitHub repository to a Node.js host (Render, Railwa
 TradeWee/
 ├── server.js          # Express server (API, calendar/alerts proxy, AI calls)
 ├── i18n-server.js     # English translation of server messages
+├── profile.js         # trader profile / profil du trader
 ├── sheets.js          # Google Sheets (Apps Script)
 ├── tradingview.js     # TradingView webhook → automatic analysis
 ├── public/            # interface (HTML/CSS/JS, no build step)

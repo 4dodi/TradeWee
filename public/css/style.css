@@ -532,3 +532,20 @@ code { background: var(--bg); padding: 1px 5px; border-radius: 5px; font-size: 1
 #fb-comment { width: 100%; margin-top: 4px; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font-family: inherit; font-size: 13px; resize: vertical; }
 .fb-foot { display: flex; align-items: center; gap: 12px; margin-top: 8px; font-size: 12.5px; }
 .fb-mark { font-size: 14px; }
+/* ---- Profil du trader ---- */
+.pf-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 8px; }
+.pf-toolbar .spacer { flex: 1; }
+#pf-save.pf-dirty { box-shadow: 0 0 0 2px var(--orange); }
+.pf-block { border: 1px solid var(--border); border-radius: 10px; padding: 10px; margin-bottom: 10px; background: var(--card-2); }
+.pf-block.off { opacity: .55; }
+.pf-head { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+.pf-head input[type=text], .pf-title, .pf-assets { background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 7px; padding: 6px 9px; font-family: inherit; font-size: 13px; }
+.pf-title { flex: 1; font-weight: 600; min-width: 0; }
+.pf-assets { width: 150px; }
+.pf-on input { width: 16px; height: 16px; accent-color: var(--green); }
+.pf-btn { background: transparent; border: 1px solid var(--border); color: var(--text); border-radius: 7px; padding: 4px 9px; cursor: pointer; }
+.pf-btn:disabled { opacity: .35; cursor: default; }
+.pf-text { width: 100%; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 12.5px; line-height: 1.5; resize: vertical; }
+.pf-empty { text-align: center; padding: 26px 10px; color: var(--muted); }
+.pf-import-opts { display: flex; flex-wrap: wrap; gap: 16px; margin: 8px 0; }
+@media (max-width: 700px) { .pf-head { flex-wrap: wrap; } .pf-assets { width: 100%; } }

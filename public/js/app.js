@@ -13,6 +13,7 @@ $$('.nav-btn').forEach(btn => {
     if (btn.dataset.tab === 'alerts') window.AlertsMgr && AlertsMgr.ensure();
     if (btn.dataset.tab === 'journal') window.JournalMgr && JournalMgr.ensure();
     if (btn.dataset.tab === 'market') window.MarketMgr && MarketMgr.ensure();
+    if (btn.dataset.tab === 'profile') window.ProfileMgr && ProfileMgr.ensure();
     if (btn.dataset.tab === 'analyze') window.AnalyzeMgr && AnalyzeMgr.refreshHistory();
   });
 });

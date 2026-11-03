@@ -89,6 +89,8 @@ const PATTERNS = [
   [/^Rien à traduire : cette analyse n’a pas de plan\.$/, 'Nothing to translate: this analysis has no plan.'],
   [/^Traduction impossible : (.*)$/s, 'Translation failed: ~1'],
   [/^Réponse de traduction illisible\. Réessayez\.$/, 'Unreadable translation response. Try again.'],
+  // profil du trader
+  [/^Profil trop long \((\d+) caractères, maximum (\d+)\)\.$/, 'Profile too long ($1 characters, maximum $2).'],
   // IA de secours
   [/^IA principale indisponible : analyse réalisée par l’IA de secours « (.*) »\.$/s, 'Main AI unavailable: this analysis was made by the backup AI “$1”.'],
   // Google Sheets

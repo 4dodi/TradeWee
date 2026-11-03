@@ -56,6 +56,18 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
   const trRes = await fetch(base + '/api/analyses/inconnu/translate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{"lang":"en"}' });
   assert.strictEqual(trRes.status, 404);
 
+  // profil du trader : enregistrement, filtre par actif, aperçu
+  const pf = await (await fetch(base + '/api/profile', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ enabled: true, blocks: [
+    { title: 'Rules', text: 'Minimum R:R 1.5', enabled: true },
+    { title: 'BTC levels', text: 'Vital floor 81348', enabled: true, assets: 'BTCUSD' },
+    { title: 'Off', text: 'not sent', enabled: false }
+  ] }) })).json();
+  assert.strictEqual(pf.blocks.length, 3);
+  const pvBtc = await (await fetch(base + '/api/profile/preview?asset=BINANCE:BTCUSDT')).json();
+  const pvGold = await (await fetch(base + '/api/profile/preview?asset=XAUUSD')).json();
+  assert(pvBtc.count === 2 && pvBtc.text.includes('81348') && !pvBtc.text.includes('not sent'), 'profil BTC');
+  assert(pvGold.count === 1 && !pvGold.text.includes('81348'), 'consigne BTC absente pour l’or');
+
   // retour sur une analyse : analyse inconnue → 404
   const fbRes = await fetch(base + '/api/analyses/inconnu/feedback', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: '{"rating":"good"}' });
   assert.strictEqual(fbRes.status, 404);

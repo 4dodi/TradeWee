@@ -243,7 +243,10 @@ window.AnalyzeMgr = {
       `<button type="button" class="seg-btn ${fb[field] === value ? 'active' : ''}" data-fb-field="${field}" data-fb-value="${value}">${esc(label)}</button>`;
     const row = (label, field, opts) =>
       `<div class="fb-row"><span class="fb-label">${esc(label)}</span><div class="seg-lang">${opts.map(([v, l]) => opt(field, v, l)).join('')}</div></div>`;
-    const used = entry.feedbackUsed ? `<p class="muted fb-used">🧠 ${esc(t('Cette analyse a tenu compte de {n} retour(s) précédent(s).', { n: entry.feedbackUsed }))}</p>` : '';
+    const usedParts = [];
+    if (entry.profileUsed) usedParts.push(t('votre profil ({n} consigne(s))', { n: entry.profileUsed }));
+    if (entry.feedbackUsed) usedParts.push(t('{n} retour(s) précédent(s)', { n: entry.feedbackUsed }));
+    const used = usedParts.length ? `<p class="muted fb-used">🧠 ${esc(t('Cette analyse a tenu compte de : {list}.', { list: usedParts.join(' + ') }))}</p>` : '';
     return `
       <div class="fb-card" id="fb-card">
         <h3>📝 ${esc(t('Votre avis sur cette analyse'))}</h3>

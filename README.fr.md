@@ -65,6 +65,16 @@ L'IA rédige les nouvelles analyses dans la langue choisie. Chaque analyse enreg
 
 La clé est stockée uniquement en local dans `data/config.json` (fichier exclu de Git).
 
+## Profil du trader (vos consignes pour l'IA)
+
+L'onglet **🧠 Profil** regroupe vos consignes personnelles — stratégie, règles de risque, niveaux clés, setups préférés, méthode de raisonnement — sous forme de blocs envoyés à l'IA à chaque analyse (captures et alertes TradingView).
+
+- **Importer un texte** : collez vos consignes (Markdown) ; elles sont découpées en un bloc par titre `##` / `###`, les sous-titres gardant le titre parent. Un titre comme *Key levels to watch (BTC/USD)* est automatiquement limité à `BTCUSD`.
+- Chaque bloc peut être **modifié, désactivé, déplacé ou supprimé** ; **➕ Ajouter une consigne** en crée un nouveau. Le champ **Actifs** limite un bloc à certains symboles (`BTCUSD`, ou `EURUSD, GBPUSD`) ; vide = tous les actifs.
+- **👁 Aperçu pour l'IA** montre exactement ce que l'IA reçoit pour un actif donné ; **📋 Copier tout** exporte le profil en texte.
+- Le format de réponse de l'app prime toujours sur les demandes de présentation du profil : une réponse « ATTENDRE / pas de trade » devient un biais NEUTRE, les rappels vont dans les avertissements, les scénarios dans l'analyse technique.
+- Le profil est stocké uniquement sur votre ordinateur, dans `data/profile.json` (exclu de Git). Chaque résultat indique combien de consignes et de retours ont été utilisés.
+
 ## Des retours qui améliorent les analyses suivantes
 
 Chaque analyse enregistrée a une carte **📝 Votre avis** : notez l'analyse (👍/👎), l'entrée (bonne / trop tôt / trop tard), le stop loss (bon / trop serré / trop large), les take profits (bons / trop loin / trop proches), le résultat (TP touché / SL touché / break-even / non déclenché) et ajoutez un commentaire. Chaque clic est enregistré ; recliquer sur le choix actif l'annule.
@@ -158,6 +168,7 @@ Pour l'utiliser en ligne, déployez le dépôt GitHub sur un hébergeur Node.js 
 tradewee/
 ├── server.js          # serveur Express (API, proxy calendrier/alertes, appel IA)
 ├── i18n-server.js     # traduction anglaise des messages du serveur
+├── profile.js         # trader profile / profil du trader
 ├── sheets.js          # Google Sheets (Apps Script)
 ├── tradingview.js     # webhook TradingView → analyse automatique
 ├── public/            # interface (HTML/CSS/JS, aucun build nécessaire)

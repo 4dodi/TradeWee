@@ -9,6 +9,7 @@ const path = require('path');
 const crypto = require('crypto');
 const { languageMiddleware, toEnglish } = require('./i18n-server');
 const { setupSheets } = require('./sheets');
+const { setupProfile } = require('./profile');
 const { setupTradingView } = require('./tradingview');
 
 const app = express();
@@ -508,6 +509,7 @@ function resolveKeyFor(body, savedUrl, savedKey) {
 app.use(express.json({ limit: '40mb' }));
 app.use(languageMiddleware); // langue des réponses : en-tête X-Lang (en par défaut)
 tradingView.mountApi();
+const profile = setupProfile({ app, dataDir: DATA_DIR }); // profil du trader (consignes pour l'IA)
 const sheets = setupSheets({
   app, fetchWithTimeout, toEnglish, loadAnalyses,
   saveAnalyses: (list) => saveJson(ANALYSES_FILE, list),
@@ -949,6 +951,14 @@ async function runAnalysis({ images = [], asset, timeframe, notes, direction, co
     } catch { /* pas bloquant */ }
   }
 
+  // profil du trader : consignes personnelles ajoutées aux instructions système
+  let profileText = '', profileUsed = 0;
+  try {
+    const pr = profile.buildProfileBlock(asset, lang);
+    profileText = pr.text;
+    profileUsed = pr.count;
+  } catch { /* pas bloquant */ }
+
   const en = lang === 'en';
   const dirEn = { achat: 'BUY', vente: 'SELL' };
   const dirTxt = direction && direction !== 'aucun'
@@ -992,7 +1002,7 @@ Rappel : réponds uniquement par le JSON au schéma demandé, en français.`;
   const url = baseUrl.replace(/\/+$/, '');
   const payload = {
     messages: [
-      { role: 'system', content: en ? SYSTEM_PROMPT_EN : SYSTEM_PROMPT },
+      { role: 'system', content: (en ? SYSTEM_PROMPT_EN : SYSTEM_PROMPT) + profileText },
       { role: 'user', content }
     ],
     temperature: 0.3,
@@ -1148,6 +1158,7 @@ Rappel : réponds uniquement par le JSON au schéma demandé, en français.`;
     model: modelUsed,
     lang: lang === 'fr' ? 'fr' : 'en', // langue du texte rédigé par l'IA
     feedbackUsed, // nombre de retours utilisateur pris en compte
+    profileUsed,  // nombre de consignes du profil appliquées
     params: { asset: asset || null, timeframe: timeframe || null, notes: notes || '', direction: direction || 'aucun', source },
     images: savedFiles,
     result: parsed,
